@@ -33,30 +33,34 @@ class WordSelectionCard extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
-            if (isLoading)
-              const Center(
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('새로운 단어를 불러오는 중...'),
-                  ],
-                ),
-              )
-            else
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                alignment: WrapAlignment.center,
-                children: words
-                    .map(
-                      (word) => _WordChip(
-                        word: word,
-                        onTap: () => onWordSelected(word),
+            Expanded(
+              child: isLoading
+                  ? const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('새로운 단어를 불러오는 중...'),
+                        ],
                       ),
                     )
-                    .toList(),
-              ),
+                  : SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        alignment: WrapAlignment.center,
+                        children: words
+                            .map(
+                              (word) => _WordChip(
+                                word: word,
+                                onTap: () => onWordSelected(word),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+            ),
           ],
         ),
       ),
