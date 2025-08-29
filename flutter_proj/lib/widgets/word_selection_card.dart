@@ -6,6 +6,7 @@ class WordSelectionCard extends StatelessWidget {
   final Function(Word) onWordSelected;
   final bool isLoading;
   final String title;
+  final VoidCallback? onRefresh;
 
   const WordSelectionCard({
     super.key,
@@ -13,6 +14,7 @@ class WordSelectionCard extends StatelessWidget {
     required this.onWordSelected,
     this.isLoading = false,
     this.title = '단어를 선택하세요',
+    this.onRefresh,
   });
 
   @override
@@ -24,13 +26,28 @@ class WordSelectionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              textAlign: TextAlign.center,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ) ??
+                        TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                ),
+                if (onRefresh != null)
+                  IconButton.filledTonal(
+                    onPressed: onRefresh,
+                    icon: const Icon(Icons.refresh),
+                    tooltip: '다른 단어 보기',
+                  ),
+              ],
             ),
             const SizedBox(height: 20),
             Expanded(

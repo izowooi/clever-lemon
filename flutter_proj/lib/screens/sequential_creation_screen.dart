@@ -17,54 +17,63 @@ class SequentialCreationScreen extends ConsumerWidget {
   }
 
   Widget _buildProgressIndicator(BuildContext context, PoetryCreationState state) {
-    int currentStep = state.selectedWords.length;
-    String stepText = '단어 선택 (${state.selectedWords.length}/3)';
-    
+    final int currentStep = state.selectedWords.length;
+    final String stepText = '단어 선택 (${state.selectedWords.length}/3)';
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              stepText,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            LinearProgressIndicator(
-              value: currentStep / 3,
-              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (state.selectedWords.isNotEmpty) ...[
-              Text(
-                '선택된 단어:',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: state.selectedWords
-                    .map(
-                      (word) => Chip(
-                        label: Text(word.text),
-                        backgroundColor: Theme.of(context)
-                            .colorScheme
-                            .secondaryContainer,
-                        labelStyle: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                        ),
+            SizedBox(
+              height: 36,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: currentStep / 3,
+                      minHeight: 36,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.primary,
                       ),
-                    )
-                    .toList(),
+                    ),
+                  ),
+                  Text(
+                    stepText,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ) ??
+                        TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            if (state.selectedWords.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 36,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: state.selectedWords.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (context, index) {
+                    final word = state.selectedWords[index];
+                    return Chip(
+                      label: Text(word.text),
+                      backgroundColor:
+                          Theme.of(context).colorScheme.secondaryContainer,
+                      labelStyle: const TextStyle(fontWeight: FontWeight.w500),
+                    );
+                  },
+                ),
               ),
             ],
           ],
@@ -150,23 +159,7 @@ class SequentialCreationScreen extends ConsumerWidget {
               onWordSelected: notifier.selectWordSequentially,
               isLoading: state.isLoading,
               title: title,
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // 다른 단어 보기 버튼
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: state.currentWords.isEmpty ? null : notifier.loadRandomWords,
-              icon: const Icon(Icons.refresh),
-              label: const Text(
-                '다른 단어 보기',
-                style: TextStyle(fontSize: 16),
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
+              onRefresh: state.currentWords.isEmpty ? null : notifier.loadRandomWords,
             ),
           ),
         ],
