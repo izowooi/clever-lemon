@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'sequential_creation_screen.dart';
-import 'batch_creation_screen.dart';
 import 'poetry_list_screen.dart';
 import 'settings_screen.dart';
 
@@ -18,7 +17,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       setState(() {
         _currentIndex = _tabController.index;
@@ -50,7 +49,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         controller: _tabController,
         children: const [
           SequentialCreationScreen(),
-          BatchCreationScreen(),
           PoetryListScreen(),
           SettingsScreen(),
         ],
@@ -65,12 +63,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.auto_awesome),
-            label: '순차 창작',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_customize),
-            label: '일괄 창작',
+            icon: Icon(Icons.create),
+            label: '시 창작',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.library_books),
