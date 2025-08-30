@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'sequential_creation_screen.dart';
 import 'poetry_list_screen.dart';
 import 'settings_screen.dart';
-import 'auth_test_screen.dart';
+import 'dev_test_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           SequentialCreationScreen(),
           PoetryListScreen(),
           SettingsScreen(),
-          AuthTestScreen(),
+          DevTestScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -77,8 +77,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             label: '설정',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bug_report),
-            label: '테스트',
+            icon: Icon(Icons.developer_board),
+            label: '개발 테스트',
           ),
         ],
       ),
