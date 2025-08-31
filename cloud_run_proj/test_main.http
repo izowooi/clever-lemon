@@ -1,11 +1,88 @@
 # Test your FastAPI endpoints
 
+# 기존 엔드포인트
 GET http://127.0.0.1:8000/
 Accept: application/json
 
 ###
 
 GET http://127.0.0.1:8000/hello/User
+Accept: application/json
+
+###
+
+# 1. Ping 테스트
+GET http://127.0.0.1:8000/ping
+Accept: application/json
+
+###
+
+# 2. 유저 재화 정보 조회
+GET http://127.0.0.1:8000/users/user123/currency
+Accept: application/json
+
+###
+
+GET http://127.0.0.1:8000/users/user456/currency
+Accept: application/json
+
+###
+
+# 3. 유저 설정 정보 조회
+GET http://127.0.0.1:8000/users/user123/settings
+Accept: application/json
+
+###
+
+GET http://127.0.0.1:8000/users/user456/settings
+Accept: application/json
+
+###
+
+# 4. 유저 설정 정보 갱신
+PUT http://127.0.0.1:8000/users/user123/settings
+Content-Type: application/json
+
+{
+  "font_size": 18,
+  "app_theme_color": "purple",
+  "favorite_poet": "이육사"
+}
+
+###
+
+# 5. 결제 승인
+POST http://127.0.0.1:8000/payments/approve
+Content-Type: application/json
+
+{
+  "user_id": "user123",
+  "payment_info": {
+    "payment_id": "pay_12345",
+    "amount": 500,
+    "currency_type": "coins",
+    "payment_method": "credit_card"
+  }
+}
+
+###
+
+# 6. 시 생성 (30초 이상 소요 - 테스트 시 주의!)
+POST http://127.0.0.1:8000/poems/generate
+Content-Type: application/json
+
+{
+  "style": "서정적",
+  "poet": "윤동주",
+  "theme_words": ["달", "그리움", "희망"],
+  "length": "보통",
+  "ai_model": "gpt-4"
+}
+
+###
+
+# 에러 케이스 테스트 - 존재하지 않는 사용자
+GET http://127.0.0.1:8000/users/nonexistent/currency
 Accept: application/json
 
 ###
