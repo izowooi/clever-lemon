@@ -4,20 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/interfaces/auth_adapter.dart';
 import '../services/implementations/mock_auth_adapters.dart';
 
-import '../services/interfaces/remote_config_adapter.dart';
-import '../services/implementations/mock_remote_config_adapter.dart';
-import '../services/implementations/mock_messaging_adapter.dart';
-import '../services/interfaces/api_service.dart';
-import '../services/implementations/mock_api_service.dart';
+
+
 import 'dev_test_screen_firebase.dart';
+import 'dev_test_screen_remote_config.dart';
 
 final _googleAuthProvider = Provider<AuthAdapter>((ref) => GoogleAuthAdapter());
 final _appleAuthProvider = Provider<AuthAdapter>((ref) => AppleAuthAdapter());
 final _guestAuthProvider = Provider<AuthAdapter>((ref) => GuestAuthAdapter());
 
-final _remoteConfigProvider = Provider<RemoteConfigAdapter>((ref) => MockRemoteConfigAdapter());
-final _messagingProvider = Provider<MockMessagingAdapter>((ref) => MockMessagingAdapter());
-final _apiProvider = Provider<ApiService>((ref) => MockApiService());
+
+
 
 class DevTestScreen extends ConsumerStatefulWidget {
   const DevTestScreen({super.key});
@@ -61,9 +58,9 @@ class _DevTestScreenState extends ConsumerState<DevTestScreen>
         controller: _tabController,
         children: const [
           _AuthTab(),
-          _RemoteConfigTab(),
-          _MessagingTab(),
-          _ApiTab(),
+          RemoteConfigTestHarness(),
+          _PlaceholderTab(title: 'Messaging'),
+          _PlaceholderTab(title: 'API'),
         ],
       ),
     );
@@ -231,325 +228,42 @@ class _AuthHarnessState extends ConsumerState<_AuthHarness> {
   }
 }
 
-class _RemoteConfigTab extends ConsumerStatefulWidget {
-  const _RemoteConfigTab();
 
-  @override
-  ConsumerState<_RemoteConfigTab> createState() => _RemoteConfigTabState();
-}
-
-class _RemoteConfigTabState extends ConsumerState<_RemoteConfigTab> {
-  String _log = '';
-  bool _initializing = false;
-  bool _working = false;
-
-  Future<void> _initialize(WidgetRef ref) async {
-    _initializing = true;
-    _log = '초기화 중...';
-    setState(() {});
-    final rc = ref.read(_remoteConfigProvider);
-    try {
-      await rc.initialize();
-      await rc.setDefaults({
-        'welcome_message': '기본 메시지',
-        'feature_enabled': false,
-        'max_items': 10,
-        'pi_value': 3.0,
-      });
-      _log = '초기화 + 기본값 설정 완료';
-    } catch (e) {
-      _log = '초기화 실패: ' + e.toString();
-    } finally {
-      _initializing = false;
-      setState(() {});
-    }
-  }
-
-  Future<void> _fetchAndActivate(WidgetRef ref) async {
-    _working = true;
-    _log = 'Fetch + Activate 중...';
-    setState(() {});
-    final rc = ref.read(_remoteConfigProvider);
-    final result = await rc.fetchAndActivate();
-    _log = (result.isSuccess ? '성공: ' : '실패: ') + result.message + '\n' +
-        'welcome_message=' + rc.getString('welcome_message') + '\n' +
-        'feature_enabled=' + rc.getBool('feature_enabled').toString() + '\n' +
-        'max_items=' + rc.getInt('max_items').toString() + '\n' +
-        'pi_value=' + rc.getDouble('pi_value').toString();
-    _working = false;
-    setState(() {});
-  }
+class _PlaceholderTab extends StatelessWidget {
+  const _PlaceholderTab({required this.title});
+  
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, _) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: _initializing || _working ? null : () => _initialize(ref),
-                    icon: const Icon(Icons.power_settings_new),
-                    label: const Text('초기화'),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _initializing || _working ? null : () => _fetchAndActivate(ref),
-                    icon: const Icon(Icons.cloud_download),
-                    label: const Text('Fetch+Activate'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '로그',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      _log,
-                      style: const TextStyle(fontFamily: 'monospace'),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.construction,
+            size: 80,
+            color: Colors.grey,
           ),
-        );
-      },
+          SizedBox(height: 16),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "곧 구현될 예정입니다",
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
-
-class _MessagingTab extends ConsumerStatefulWidget {
-  const _MessagingTab();
-
-  @override
-  ConsumerState<_MessagingTab> createState() => _MessagingTabState();
-}
-
-class _MessagingTabState extends ConsumerState<_MessagingTab> {
-  String _log = '';
-  String _topic = '';
-  bool _initializing = false;
-  bool _working = false;
-
-  Future<void> _initialize(WidgetRef ref) async {
-    _initializing = true;
-    _log = '초기화 중...';
-    setState(() {});
-    final m = ref.read(_messagingProvider);
-    try {
-      await m.initialize();
-      _log = '초기화 완료';
-    } catch (e) {
-      _log = '초기화 실패: ' + e.toString();
-    } finally {
-      _initializing = false;
-      setState(() {});
-    }
-  }
-
-  Future<void> _subscribe(WidgetRef ref) async {
-    _working = true;
-    _log = '구독 중...';
-    setState(() {});
-    final m = ref.read(_messagingProvider);
-    final result = await m.subscribeToTopic(_topic);
-    _log = (result.isSuccess ? '성공: ' : '실패: ') + result.message + '\n' +
-        '현재 토픽: ' + m.topics.join(', ');
-    _working = false;
-    setState(() {});
-  }
-
-  Future<void> _unsubscribe(WidgetRef ref) async {
-    _working = true;
-    _log = '구독 해제 중...';
-    setState(() {});
-    final m = ref.read(_messagingProvider);
-    final result = await m.unsubscribeFromTopic(_topic);
-    _log = (result.isSuccess ? '성공: ' : '실패: ') + result.message + '\n' +
-        '현재 토픽: ' + m.topics.join(', ');
-    _working = false;
-    setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, _) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 220,
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        labelText: '토픽',
-                        hintText: '예: news, all-users',
-                      ),
-                      onChanged: (v) => _topic = v,
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _initializing || _working ? null : () => _initialize(ref),
-                    icon: const Icon(Icons.power_settings_new),
-                    label: const Text('초기화'),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _initializing || _working ? null : () => _subscribe(ref),
-                    icon: const Icon(Icons.add_alert),
-                    label: const Text('구독'),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _initializing || _working ? null : () => _unsubscribe(ref),
-                    icon: const Icon(Icons.notifications_off),
-                    label: const Text('구독 해제'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '로그',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      _log,
-                      style: const TextStyle(fontFamily: 'monospace'),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ApiTab extends ConsumerStatefulWidget {
-  const _ApiTab();
-
-  @override
-  ConsumerState<_ApiTab> createState() => _ApiTabState();
-}
-
-class _ApiTabState extends ConsumerState<_ApiTab> {
-  String _log = '';
-  String _userId = '';
-  bool _working = false;
-
-  Future<void> _fetch(WidgetRef ref) async {
-    _working = true;
-    _log = '요청 중...';
-    setState(() {});
-    final api = ref.read(_apiProvider);
-    final info = await api.fetchUserInfo(_userId);
-    _log = '응답 수신:\n' + info.toString();
-    _working = false;
-    setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, _) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 220,
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        labelText: '유저 ID',
-                        hintText: '예: 1, 2, abc',
-                      ),
-                      onChanged: (v) => _userId = v,
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _working ? null : () => _fetch(ref),
-                    icon: const Icon(Icons.send),
-                    label: const Text('조회'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '로그',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      _log,
-                      style: const TextStyle(fontFamily: 'monospace'),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-
