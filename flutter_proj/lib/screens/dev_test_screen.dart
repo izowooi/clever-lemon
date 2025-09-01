@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/interfaces/auth_adapter.dart';
 import '../services/implementations/mock_auth_adapters.dart';
+
 import '../services/interfaces/remote_config_adapter.dart';
 import '../services/implementations/mock_remote_config_adapter.dart';
 import '../services/implementations/mock_messaging_adapter.dart';
 import '../services/interfaces/api_service.dart';
 import '../services/implementations/mock_api_service.dart';
+import 'dev_test_screen_firebase.dart';
 
 final _googleAuthProvider = Provider<AuthAdapter>((ref) => GoogleAuthAdapter());
 final _appleAuthProvider = Provider<AuthAdapter>((ref) => AppleAuthAdapter());
@@ -74,7 +76,7 @@ class _AuthTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const DefaultTabController(
-      length: 3,
+      length: 4,
       child: Column(
         children: [
           TabBar(
@@ -82,6 +84,7 @@ class _AuthTab extends StatelessWidget {
               Tab(text: 'Google'),
               Tab(text: 'Apple'),
               Tab(text: 'Guest'),
+              Tab(text: 'Firebase'),
             ],
           ),
           Expanded(
@@ -90,6 +93,7 @@ class _AuthTab extends StatelessWidget {
                 _AuthHarness(providerKey: _AuthProviderKey.google),
                 _AuthHarness(providerKey: _AuthProviderKey.apple),
                 _AuthHarness(providerKey: _AuthProviderKey.guest),
+                FirebaseAuthHarness(),
               ],
             ),
           ),
