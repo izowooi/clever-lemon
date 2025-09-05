@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/interfaces/auth_adapter.dart';
 import '../services/implementations/mock_auth_adapters.dart';
+import '../services/implementations/supabase_google_auth_adapter.dart';
 
-final _googleAuthProvider = Provider<AuthAdapter>((ref) => GoogleAuthAdapter());
+final _googleAuthProvider = Provider<AuthAdapter>((ref) => SupabaseGoogleAuthAdapter());
 final _appleAuthProvider = Provider<AuthAdapter>((ref) => AppleAuthAdapter());
 final _guestAuthProvider = Provider<AuthAdapter>((ref) => GuestAuthAdapter());
 

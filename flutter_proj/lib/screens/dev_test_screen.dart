@@ -6,8 +6,8 @@ import '../services/implementations/mock_auth_adapters.dart';
 
 
 
-import 'dev_test_screen_firebase.dart';
 import 'dev_test_screen_remote_config.dart';
+import 'dev_test_screen_supabase.dart';
 
 final _googleAuthProvider = Provider<AuthAdapter>((ref) => GoogleAuthAdapter());
 final _appleAuthProvider = Provider<AuthAdapter>((ref) => AppleAuthAdapter());
@@ -50,7 +50,7 @@ class _DevTestScreenState extends ConsumerState<DevTestScreen>
             Tab(text: 'Auth'),
             Tab(text: 'Remote'),
             Tab(text: 'Messaging'),
-            Tab(text: 'API'),
+            Tab(text: 'Supabase'),
           ],
         ),
       ),
@@ -60,7 +60,7 @@ class _DevTestScreenState extends ConsumerState<DevTestScreen>
           _AuthTab(),
           RemoteConfigTestHarness(),
           _PlaceholderTab(title: 'Messaging'),
-          _PlaceholderTab(title: 'API'),
+          SupabaseTestHarness(),
         ],
       ),
     );
@@ -73,7 +73,7 @@ class _AuthTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const DefaultTabController(
-      length: 4,
+      length: 3,
       child: Column(
         children: [
           TabBar(
@@ -81,7 +81,6 @@ class _AuthTab extends StatelessWidget {
               Tab(text: 'Google'),
               Tab(text: 'Apple'),
               Tab(text: 'Guest'),
-              Tab(text: 'Firebase'),
             ],
           ),
           Expanded(
@@ -90,7 +89,6 @@ class _AuthTab extends StatelessWidget {
                 _AuthHarness(providerKey: _AuthProviderKey.google),
                 _AuthHarness(providerKey: _AuthProviderKey.apple),
                 _AuthHarness(providerKey: _AuthProviderKey.guest),
-                FirebaseAuthHarness(),
               ],
             ),
           ),
