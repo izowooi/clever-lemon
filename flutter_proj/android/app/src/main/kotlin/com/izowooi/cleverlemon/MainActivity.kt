@@ -1,4 +1,4 @@
-package com.example.flutter_proj
+package com.izowooi.cleverlemon
 
 import io.flutter.embedding.android.FlutterActivity
 
