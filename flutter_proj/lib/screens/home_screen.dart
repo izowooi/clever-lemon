@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_proj/screens/auth_test_screen.dart';
 import 'sequential_creation_screen.dart';
 import 'poetry_list_screen.dart';
 import 'settings_screen.dart';
@@ -52,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           SequentialCreationScreen(),
           PoetryListScreen(),
           SettingsScreen(),
-          DevTestScreen(),
+          AuthTestScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
