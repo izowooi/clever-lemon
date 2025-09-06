@@ -3,7 +3,22 @@ from pydantic import BaseModel
 from typing import List, Optional
 import asyncio
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+from supabase import create_client, Client
 from verify_token import verify_and_decode_supabase_jwt
+
+load_dotenv()
+
+# Supabase 클라이언트 설정
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+if not supabase_url or not supabase_service_key:
+    print("경고: Supabase 환경변수가 설정되지 않았습니다.")
+    supabase = None
+else:
+    supabase: Client = create_client(supabase_url, supabase_service_key)
 
 app = FastAPI(title="시 생성 API", version="1.0.0")
 
@@ -68,6 +83,20 @@ class TokenResponse(BaseModel):
     exp: int
     message: str
 
+class UserRegistrationTestRequest(BaseModel):
+    user_id: str
+    initial_credits: Optional[int] = 100
+
+class UserRegistrationRequest(BaseModel):
+    access_token: str
+
+class UserRegistrationResponse(BaseModel):
+    success: bool
+    user_id: str
+    credits: int
+    message: str
+    created_at: Optional[str] = None
+
 # 더미 데이터베이스 (실제 구현에서는 데이터베이스 사용)
 fake_user_currency = {
     "user123": {"coins": 1000, "gems": 50, "premium_points": 25},
@@ -126,6 +155,115 @@ async def verify_token(token_request: TokenRequest):
         raise HTTPException(
             status_code=401,
             detail=f"토큰 검증 실패: {str(e)}"
+        )
+
+# 8. 회원가입 (테스트용) - user_id로 직접 등록
+@app.post("/auth/register-test", response_model=UserRegistrationResponse)
+async def register_user_test(request: UserRegistrationTestRequest):
+    """테스트용: user_id를 직접 받아서 회원가입 처리"""
+    if not supabase:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase 클라이언트가 설정되지 않았습니다"
+        )
+    
+    try:
+        # 기존 사용자 확인
+        existing_user = supabase.table("users_credits").select("*").eq("user_id", request.user_id).execute()
+        
+        if existing_user.data:
+            raise HTTPException(
+                status_code=409,
+                detail="이미 등록된 사용자입니다"
+            )
+        
+        # 새 사용자 등록
+        result = supabase.table("users_credits").insert({
+            "user_id": request.user_id,
+            "credits": request.initial_credits,
+            "updated_at": datetime.now().isoformat()
+        }).execute()
+        
+        if result.data:
+            user_data = result.data[0]
+            return UserRegistrationResponse(
+                success=True,
+                user_id=user_data["user_id"],
+                credits=user_data["credits"],
+                message="테스트 회원가입이 성공적으로 완료되었습니다",
+                created_at=user_data.get("updated_at")
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="데이터베이스 등록에 실패했습니다"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"회원가입 처리 중 오류가 발생했습니다: {str(e)}"
+        )
+
+# 9. 회원가입 (실제용) - access_token으로 등록
+@app.post("/auth/register", response_model=UserRegistrationResponse)
+async def register_user(request: UserRegistrationRequest):
+    """실제용: access_token을 검증하고 회원가입 처리"""
+    if not supabase:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase 클라이언트가 설정되지 않았습니다"
+        )
+    
+    try:
+        # JWT 토큰 검증
+        claims = verify_and_decode_supabase_jwt(request.access_token)
+        user_id = claims["sub"]
+        
+        # 기존 사용자 확인
+        existing_user = supabase.table("users_credits").select("*").eq("user_id", user_id).execute()
+        
+        if existing_user.data:
+            user_data = existing_user.data[0]
+            return UserRegistrationResponse(
+                success=True,
+                user_id=user_data["user_id"],
+                credits=user_data["credits"],
+                message="이미 등록된 사용자입니다",
+                created_at=user_data.get("updated_at")
+            )
+        
+        # 새 사용자 등록
+        initial_credits = 100  # 기본 크레딧
+        result = supabase.table("users_credits").insert({
+            "user_id": user_id,
+            "credits": initial_credits,
+            "updated_at": datetime.now().isoformat()
+        }).execute()
+        
+        if result.data:
+            user_data = result.data[0]
+            return UserRegistrationResponse(
+                success=True,
+                user_id=user_data["user_id"],
+                credits=user_data["credits"],
+                message="회원가입이 성공적으로 완료되었습니다",
+                created_at=user_data.get("updated_at")
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="데이터베이스 등록에 실패했습니다"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"회원가입 처리 중 오류가 발생했습니다: {str(e)}"
         )
 
 # 2. 유저 재화 정보 조회
