@@ -14,17 +14,34 @@ EXPECTED_ISS = f"{SUPABASE_URL}/auth/v1"
 _JWKS_CACHE: dict | None = None
 _JWKS_TS = 0
 
-from jwt import algorithms as jwt_algorithms
-
 def public_key_from_jwk(jwk: dict, fallback_alg: str | None = None):
-   alg = jwk.get("alg") or fallback_alg or "ES256"
-   if alg.startswith("RS"):
-       return jwt_algorithms.RSAAlgorithm.from_jwk(jwk)
-   if alg.startswith("ES"):
-       return jwt_algorithms.ECAlgorithm.from_jwk(jwk)   # ← ES256 여기서 처리
-   if alg == "EdDSA":
-       return jwt_algorithms.ED25519Algorithm.from_jwk(jwk)
-   raise ValueError(f"Unsupported alg: {alg}")
+   try:
+       from jwt import algorithms as jwt_algorithms
+       alg = jwk.get("alg") or fallback_alg or "ES256"
+       
+       if alg.startswith("RS"):
+           return jwt_algorithms.RSAAlgorithm.from_jwk(jwk)
+       if alg.startswith("ES"):
+           # PyJWT 2.0+ compatibility
+           if hasattr(jwt_algorithms, 'ECAlgorithm'):
+               return jwt_algorithms.ECAlgorithm.from_jwk(jwk)
+           else:
+               # Fallback for older PyJWT versions
+               from cryptography.hazmat.primitives.serialization import load_der_public_key
+               import base64
+               import json
+               
+               # Use PyJWKClient approach for older versions
+               return None  # Will be handled by PyJWKClient
+       if alg == "EdDSA":
+           if hasattr(jwt_algorithms, 'ED25519Algorithm'):
+               return jwt_algorithms.ED25519Algorithm.from_jwk(jwk)
+           else:
+               return None  # Will be handled by PyJWKClient
+       raise ValueError(f"Unsupported alg: {alg}")
+   except Exception:
+       # If algorithm processing fails, let PyJWKClient handle it
+       return None
 
 def _get_jwk_key_for(token: str):
    global _JWKS_CACHE, _JWKS_TS
@@ -39,22 +56,39 @@ def _get_jwk_key_for(token: str):
    for k in _JWKS_CACHE.get("keys", []):
        if k.get("kid") == kid:
            key = public_key_from_jwk(k, fallback_alg=header.get("alg"))
-           return key
-           # 혹시 회전 직후면 한 번 더 새로고침
+           if key is not None:
+               return key
+           # If public_key_from_jwk returns None, use PyJWKClient as fallback
+           try:
+               jwks_client = PyJWKClient(JWKS_URL, cache_keys=True)
+               signing_key = jwks_client.get_signing_key(kid)
+               return signing_key.key
+           except Exception:
+               continue
+               
+   # 혹시 회전 직후면 한 번 더 새로고침
    _JWKS_CACHE = httpx.get(JWKS_URL, timeout=10).json()
    _JWKS_TS = now
    for k in _JWKS_CACHE.get("keys", []):
        if k.get("kid") == kid:
            key = public_key_from_jwk(k, fallback_alg=header.get("alg"))
-           return key
+           if key is not None:
+               return key
+           # If public_key_from_jwk returns None, use PyJWKClient as fallback
+           try:
+               jwks_client = PyJWKClient(JWKS_URL, cache_keys=True)
+               signing_key = jwks_client.get_signing_key(kid)
+               return signing_key.key
+           except Exception:
+               continue
    raise ValueError("Signing key not found for kid")
 
 
 def verify_and_decode_supabase_jwt(token: str) -> dict:
-   key = _get_jwk_key_for(token)
-   # aud는 Supabase 토큰에서 고정 의미가 약해 종종 검증 생략; iss/exp는 반드시 체크
+   # PyJWKClient를 사용하여 호환성 문제 해결
    jwks_client = PyJWKClient(JWKS_URL, cache_keys=True)
    signing_key = jwks_client.get_signing_key_from_jwt(token)
+   
    claims = jwt.decode(
        token,
        key=signing_key.key,
@@ -62,6 +96,7 @@ def verify_and_decode_supabase_jwt(token: str) -> dict:
        options={"require": ["exp", "iss", "sub"]},
        audience="authenticated",
    )
+   
    if claims.get("iss") != EXPECTED_ISS:
        raise jwt.InvalidIssuerError(f"Unexpected iss: {claims.get('iss')}")
    return claims
