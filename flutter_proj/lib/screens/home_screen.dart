@@ -53,7 +53,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           SequentialCreationScreen(),
           PoetryListScreen(),
           SettingsScreen(),
-          AuthTestScreen(),
+          DevTestScreen(),
+          //AuthTestScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

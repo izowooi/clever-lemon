@@ -12,51 +12,41 @@ class SupabaseTestHarness extends ConsumerStatefulWidget {
 class _SupabaseTestHarnessState extends ConsumerState<SupabaseTestHarness> {
   String _log = '';
   bool _working = false;
-  
-  // 테스트할 사용자 ID (수정 가능)
-  String _testUserId = '13McgMNHlYckeTudiqAbr1lNYQo2';
-  final TextEditingController _userIdController = TextEditingController();
-  
-  @override
-  void initState() {
-    super.initState();
-    _userIdController.text = _testUserId;
-  }
-
-  @override
-  void dispose() {
-    _userIdController.dispose();
-    super.dispose();
-  }
+  String? _currentUserId;
 
   Future<void> _testSelectCredits() async {
+    if (_currentUserId == null) {
+      _log = '오류: 로그인된 사용자가 없습니다.';
+      setState(() {});
+      return;
+    }
+
     _working = true;
-    _log = '크레딧 조회 중... (user_id: $_testUserId)';
-    print('[Supabase] 크레딧 조회 시작 - user_id: $_testUserId');
+    _log = '크레딧 조회 중... (user_id: $_currentUserId)';
+    print('[Supabase] 크레딧 조회 시작 - user_id: $_currentUserId');
     setState(() {});
 
     try {
       final response = await main.supabase
-          .from('user_credits')
+          .from('users_credits')
           .select('credits, updated_at')
-          .eq('user_id', _testUserId)
           .maybeSingle();
 
       if (response != null) {
         _log = '크레딧 조회 성공!\n\n';
-        _log += 'user_id: $_testUserId\n';
+        _log += 'user_id: $_currentUserId\n';
         _log += 'credits: ${response['credits']}\n';
         _log += 'updated_at: ${response['updated_at']}\n';
         print('[Supabase] 크레딧 조회 성공: ${response['credits']}');
       } else {
         _log = '크레딧 조회 결과: 해당 사용자의 레코드가 없습니다.\n\n';
-        _log += 'user_id: $_testUserId\n';
+        _log += 'user_id: $_currentUserId\n';
         _log += '상태: 레코드 없음';
         print('[Supabase] 레코드 없음');
       }
     } catch (e) {
       _log = '크레딧 조회 실패!\n\n';
-      _log += 'user_id: $_testUserId\n';
+      _log += 'user_id: $_currentUserId\n';
       _log += 'Error: ${e.toString()}';
       print('[Supabase] 크레딧 조회 실패: $e');
     } finally {
@@ -66,16 +56,21 @@ class _SupabaseTestHarnessState extends ConsumerState<SupabaseTestHarness> {
   }
 
   Future<void> _testInsertCredits() async {
+    if (_currentUserId == null) {
+      _log = '오류: 로그인된 사용자가 없습니다.';
+      setState(() {});
+      return;
+    }
+
     _working = true;
-    _log = '크레딧 생성 중... (user_id: $_testUserId)';
-    print('[Supabase] 크레딧 생성 시작 - user_id: $_testUserId');
+    _log = '크레딧 생성 중... (user_id: $_currentUserId)';
+    print('[Supabase] 크레딧 생성 시작 - user_id: $_currentUserId');
     setState(() {});
 
     try {
       final response = await main.supabase
-          .from('user_credits')
+          .from('users_credits')
           .insert({
-            'user_id': _testUserId,
             'credits': 500,
           })
           .select()
@@ -88,9 +83,9 @@ class _SupabaseTestHarnessState extends ConsumerState<SupabaseTestHarness> {
       print('[Supabase] 크레딧 생성 성공');
     } catch (e) {
       _log = '크레딧 생성 실패!\n\n';
-      _log += 'user_id: $_testUserId\n';
+      _log += 'user_id: $_currentUserId\n';
       _log += 'Error: ${e.toString()}\n\n';
-      
+
       if (e.toString().contains('duplicate key')) {
         _log += '참고: 이미 해당 사용자의 레코드가 존재합니다.';
       }
@@ -102,16 +97,21 @@ class _SupabaseTestHarnessState extends ConsumerState<SupabaseTestHarness> {
   }
 
   Future<void> _testUpsertCredits() async {
+    if (_currentUserId == null) {
+      _log = '오류: 로그인된 사용자가 없습니다.';
+      setState(() {});
+      return;
+    }
+
     _working = true;
-    _log = '크레딧 업서트 중... (user_id: $_testUserId)';
-    print('[Supabase] 크레딧 업서트 시작 - user_id: $_testUserId');
+    _log = '크레딧 업서트 중... (user_id: $_currentUserId)';
+    print('[Supabase] 크레딧 업서트 시작 - user_id: $_currentUserId');
     setState(() {});
 
     try {
       final response = await main.supabase
-          .from('user_credits')
+          .from('users_credits')
           .upsert({
-            'user_id': _testUserId,
             'credits': 750,
           })
           .select()
@@ -125,7 +125,7 @@ class _SupabaseTestHarnessState extends ConsumerState<SupabaseTestHarness> {
       print('[Supabase] 크레딧 업서트 성공');
     } catch (e) {
       _log = '크레딧 업서트 실패!\n\n';
-      _log += 'user_id: $_testUserId\n';
+      _log += 'user_id: $_currentUserId\n';
       _log += 'Error: ${e.toString()}';
       print('[Supabase] 크레딧 업서트 실패: $e');
     } finally {
@@ -135,16 +135,21 @@ class _SupabaseTestHarnessState extends ConsumerState<SupabaseTestHarness> {
   }
 
   Future<void> _testUpdateCredits() async {
+    if (_currentUserId == null) {
+      _log = '오류: 로그인된 사용자가 없습니다.';
+      setState(() {});
+      return;
+    }
+
     _working = true;
-    _log = '크레딧 업데이트 중... (user_id: $_testUserId)';
-    print('[Supabase] 크레딧 업데이트 시작 - user_id: $_testUserId');
+    _log = '크레딧 업데이트 중... (user_id: $_currentUserId)';
+    print('[Supabase] 크레딧 업데이트 시작 - user_id: $_currentUserId');
     setState(() {});
 
     try {
       final response = await main.supabase
-          .from('user_credits')
+          .from('users_credits')
           .update({'credits': 1000})
-          .eq('user_id', _testUserId)
           .select()
           .single();
 
@@ -155,9 +160,9 @@ class _SupabaseTestHarnessState extends ConsumerState<SupabaseTestHarness> {
       print('[Supabase] 크레딧 업데이트 성공');
     } catch (e) {
       _log = '크레딧 업데이트 실패!\n\n';
-      _log += 'user_id: $_testUserId\n';
+      _log += 'user_id: $_currentUserId\n';
       _log += 'Error: ${e.toString()}\n\n';
-      
+
       if (e.toString().contains('No rows found')) {
         _log += '참고: 해당 사용자의 레코드가 존재하지 않습니다.';
       }
@@ -169,24 +174,29 @@ class _SupabaseTestHarnessState extends ConsumerState<SupabaseTestHarness> {
   }
 
   Future<void> _testDeleteCredits() async {
+    if (_currentUserId == null) {
+      _log = '오류: 로그인된 사용자가 없습니다.';
+      setState(() {});
+      return;
+    }
+
     _working = true;
-    _log = '크레딧 삭제 중... (user_id: $_testUserId)';
-    print('[Supabase] 크레딧 삭제 시작 - user_id: $_testUserId');
+    _log = '크레딧 삭제 중... (user_id: $_currentUserId)';
+    print('[Supabase] 크레딧 삭제 시작 - user_id: $_currentUserId');
     setState(() {});
 
     try {
       await main.supabase
-          .from('user_credits')
-          .delete()
-          .eq('user_id', _testUserId);
+          .from('users_credits')
+          .delete();
 
       _log = '크레딧 삭제 성공!\n\n';
-      _log += 'user_id: $_testUserId\n';
+      _log += 'user_id: $_currentUserId\n';
       _log += '상태: 레코드가 삭제되었습니다.';
       print('[Supabase] 크레딧 삭제 성공');
     } catch (e) {
       _log = '크레딧 삭제 실패!\n\n';
-      _log += 'user_id: $_testUserId\n';
+      _log += 'user_id: $_currentUserId\n';
       _log += 'Error: ${e.toString()}';
       print('[Supabase] 크레딧 삭제 실패: $e');
     } finally {
@@ -203,25 +213,25 @@ class _SupabaseTestHarnessState extends ConsumerState<SupabaseTestHarness> {
 
     try {
       final response = await main.supabase
-          .from('user_credits')
+          .from('users_credits')
           .select('user_id, credits, updated_at')
           .order('updated_at', ascending: false)
           .limit(10);
 
       _log = '전체 크레딧 목록 조회 성공!\n\n';
       _log += '총 ${response.length}개 레코드:\n\n';
-      
+
       for (int i = 0; i < response.length; i++) {
         final record = response[i];
         _log += '${i + 1}. user_id: ${record['user_id']}\n';
         _log += '   credits: ${record['credits']}\n';
         _log += '   updated_at: ${record['updated_at']}\n\n';
       }
-      
+
       if (response.isEmpty) {
         _log += '레코드가 없습니다.';
       }
-      
+
       print('[Supabase] 전체 크레딧 목록 조회 성공: ${response.length}개');
     } catch (e) {
       _log = '전체 크레딧 목록 조회 실패!\n\n';
@@ -233,11 +243,10 @@ class _SupabaseTestHarnessState extends ConsumerState<SupabaseTestHarness> {
     }
   }
 
-  void _updateUserId() {
-    setState(() {
-      _testUserId = _userIdController.text.trim();
-    });
-    print('[Supabase] 테스트 사용자 ID 변경: $_testUserId');
+  @override
+  void initState() {
+    super.initState();
+    _currentUserId = main.supabase.auth.currentUser?.id;
   }
 
   @override
@@ -253,31 +262,30 @@ class _SupabaseTestHarnessState extends ConsumerState<SupabaseTestHarness> {
           ),
           const SizedBox(height: 8),
           Text(
-            'user_credits 테이블 CRUD 테스트\nRLS 정책으로 사용자별 접근 제어 확인',
+            'users_credits 테이블 CRUD 테스트\nRLS 정책으로 사용자별 접근 제어 확인',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
-          
-          // 사용자 ID 입력 필드
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _userIdController,
-                  decoration: const InputDecoration(
-                    labelText: '테스트 사용자 ID',
-                    hintText: '13McgMNHlYckeTudiqAbr1lNYQo2',
-                    border: OutlineInputBorder(),
+
+          // 현재 사용자 정보 표시
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '현재 로그인 사용자',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  onChanged: (value) => _updateUserId(),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'User ID: ${_currentUserId ?? '로그인되지 않음'}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _updateUserId,
-                child: const Text('적용'),
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 16),
           
