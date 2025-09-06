@@ -8,16 +8,13 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# pyproject.toml에서 requirements.txt 생성
+# pyproject.toml 복사 및 의존성 설치
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir pip-tools && \
-    pip-compile pyproject.toml --output-file requirements.txt
-
-# 의존성 설치
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir .
 
 # 설치 확인
-RUN python -c "import fastapi, uvicorn; print('Dependencies installed successfully')"
+RUN python -c "import fastapi, uvicorn, httpx, jwt; from jwt import PyJWKClient; print('All dependencies installed successfully')"
 
 # 애플리케이션 코드 복사
 COPY . .
