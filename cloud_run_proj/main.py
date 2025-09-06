@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 import asyncio
 from datetime import datetime
+from verify_token import verify_and_decode_supabase_jwt
 
 app = FastAPI(title="시 생성 API", version="1.0.0")
 
@@ -57,6 +58,16 @@ class PoemResponse(BaseModel):
     generation_time: float
     ai_model_used: str
 
+class TokenRequest(BaseModel):
+    token: str
+
+class TokenResponse(BaseModel):
+    user_id: str
+    role: Optional[str] = None
+    email: Optional[str] = None
+    exp: int
+    message: str
+
 # 더미 데이터베이스 (실제 구현에서는 데이터베이스 사용)
 fake_user_currency = {
     "user123": {"coins": 1000, "gems": 50, "premium_points": 25},
@@ -96,6 +107,26 @@ async def ping():
         "server": "poem-generation-api",
         "version": "1.0.0"
     }
+
+# 7. 토큰 인증 및 검증
+@app.post("/auth/verify", response_model=TokenResponse)
+async def verify_token(token_request: TokenRequest):
+    """Supabase JWT 토큰을 검증하고 사용자 정보를 반환합니다"""
+    try:
+        claims = verify_and_decode_supabase_jwt(token_request.token)
+        
+        return TokenResponse(
+            user_id=claims["sub"],
+            role=claims.get("role"),
+            email=claims.get("email"),
+            exp=claims["exp"],
+            message="토큰 검증이 성공적으로 완료되었습니다"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"토큰 검증 실패: {str(e)}"
+        )
 
 # 2. 유저 재화 정보 조회
 @app.get("/users/{user_id}/currency", response_model=UserCurrency)
