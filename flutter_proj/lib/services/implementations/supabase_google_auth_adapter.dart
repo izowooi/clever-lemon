@@ -52,6 +52,24 @@ class SupabaseGoogleAuthAdapter implements AuthAdapter {
 
       if (response.user != null) {
         final user = response.user!;
+
+        // Supabase access token 가져오기
+        final session = supabase.auth.currentSession;
+        final accessToken = session?.accessToken ?? 'N/A';
+
+        print('Supabase Access Token: $accessToken');
+
+        // JWT 토큰 검증 (. 개수 확인)
+        final dotCount = accessToken.split('.').length - 1;
+        print('Access Token dots count: $dotCount');
+
+        // JWT 토큰 구조 확인
+        if (dotCount == 2) {
+          print('✅ This appears to be a valid JWT token');
+        } else {
+          print('❌ This does not appear to be a valid JWT token');
+        }
+
         return AuthResult.success(
           'Google 로그인 성공!\n이메일: ${user.email ?? 'N/A'}\nUID: ${user.id}',
           extra: {
