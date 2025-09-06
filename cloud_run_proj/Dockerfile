@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
 
 # 설치 확인
-RUN python -c "import fastapi, uvicorn, httpx, jwt; from jwt import PyJWKClient; print('All dependencies installed successfully')"
+RUN python -c "import fastapi, uvicorn, httpx, jwt, supabase, dotenv; from jwt import PyJWKClient; from supabase import create_client; print('All dependencies installed successfully')"
 
 # 애플리케이션 코드 복사
 COPY . .
