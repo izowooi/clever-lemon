@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
 
 // Supabase 설정
 const supabaseUrl = 'https://tnihnfuwhhtvbkmhwiut.supabase.co';
@@ -26,11 +27,56 @@ void main() async {
   );
 }
 
-class PoetryWriterApp extends StatelessWidget {
+class PoetryWriterApp extends StatefulWidget {
   const PoetryWriterApp({super.key});
 
   @override
+  State<PoetryWriterApp> createState() => _PoetryWriterAppState();
+}
+
+class _PoetryWriterAppState extends State<PoetryWriterApp> {
+  bool _isLoading = true;
+  bool _isAuthenticated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthState();
+  }
+
+  Future<void> _checkAuthState() async {
+    // 현재 세션 확인
+    final session = supabase.auth.currentSession;
+
+    setState(() {
+      _isAuthenticated = session != null;
+      _isLoading = false;
+    });
+
+    // 인증 상태 변경 리스너 설정
+    supabase.auth.onAuthStateChange.listen((data) {
+      final session = data.session;
+      if (mounted) {
+        setState(() {
+          _isAuthenticated = session != null;
+        });
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
     return MaterialApp(
       title: 'Poetry Writer',
       debugShowCheckedModeBanner: false,
@@ -40,7 +86,7 @@ class PoetryWriterApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        
+
         // 카드 테마
         cardTheme: const CardThemeData(
           elevation: 2,
@@ -48,7 +94,7 @@ class PoetryWriterApp extends StatelessWidget {
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
         ),
-        
+
         // 버튼 테마
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
@@ -58,7 +104,7 @@ class PoetryWriterApp extends StatelessWidget {
             ),
           ),
         ),
-        
+
         // 입력 필드 테마
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(
@@ -70,7 +116,11 @@ class PoetryWriterApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomeScreen(),
+      home: _isAuthenticated ? const HomeScreen() : const LoginScreen(),
+      routes: {
+        '/home': (context) => const HomeScreen(),
+        '/login': (context) => const LoginScreen(),
+      },
     );
   }
 }
