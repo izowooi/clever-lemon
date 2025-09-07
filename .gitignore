@@ -121,4 +121,8 @@ flutter_proj/ios/Runner/GoogleService-Info.plist
 flutter_proj/pubspec.lock
 flutter_proj/pubspec.lock
 flutter_proj/ios/Runner/GoogleService-Info.plist
-/cloud_run_proj/.idea
+cloud_run_proj/.idea
+flutter_proj/docs
+flutter_proj/.claude/settings.local.json
+cloud_run_proj/.env
+cloud_run_proj/docs
