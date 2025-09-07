@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from verify_token import verify_and_decode_supabase_jwt
+from simple_poem_generator import SimplePoemGenerator
 
 load_dotenv()
 
@@ -19,6 +20,14 @@ if not supabase_url or not supabase_service_key:
     supabase = None
 else:
     supabase: Client = create_client(supabase_url, supabase_service_key)
+
+# SimplePoemGenerator 인스턴스 초기화 (전역으로 재사용)
+try:
+    poem_generator = SimplePoemGenerator()
+    print("✅ SimplePoemGenerator 초기화 완료")
+except Exception as e:
+    print(f"⚠️ SimplePoemGenerator 초기화 실패: {e}")
+    poem_generator = None
 
 app = FastAPI(title="시 생성 API", version="1.0.0")
 
@@ -57,21 +66,17 @@ class PaymentRequest(BaseModel):
     payment_info: PaymentInfo
 
 class PoemRequest(BaseModel):
-    style: str  # 서정적, 서사적, 자유시 등
-    poet: str  # 좋아하는 작가
-    theme_words: List[str]  # 3-5개의 테마 단어
-    length: str  # 짧은 시, 보통, 긴 시
-    ai_model: str
-
-class Poem(BaseModel):
-    title: str
-    content: str
-    style: str
+    style: str  # 성향 (예: "낭만적인", "우울한", "희망적인")
+    author_style: str  # 작가 스타일 (예: "김소월", "윤동주")
+    keywords: List[str]  # 포함할 단어들 (3-5개)
+    length: str  # 길이 (예: "8행", "16행", "보통")
 
 class PoemResponse(BaseModel):
-    poems: List[Poem]
-    generation_time: float
-    ai_model_used: str
+    success: bool
+    request: dict  # 요청 정보
+    poems: List[str]  # 생성된 시들 (제목 포함)
+    generation_time: Optional[float] = None
+    error: Optional[str] = None
 
 class TokenRequest(BaseModel):
     token: str
@@ -349,70 +354,39 @@ async def approve_payment(payment_request: PaymentRequest):
         "timestamp": datetime.now().isoformat()
     }
 
-# 6. 시 생성 (30초 이상 소요)
+# 6. 실제 AI 시 생성
 @app.post("/poems/generate", response_model=PoemResponse)
 async def generate_poems(poem_request: PoemRequest):
-    """AI를 이용해 4가지 스타일의 시를 생성합니다 (시간이 오래 걸립니다)"""
+    """OpenAI를 이용해 4편의 시를 생성합니다"""
+    if not poem_generator:
+        raise HTTPException(
+            status_code=500,
+            detail="시 생성기가 초기화되지 않았습니다. OpenAI API 키를 확인해주세요."
+        )
+    
     start_time = datetime.now()
     
-    # AI 시 생성 시뮬레이션 (실제로는 AI 모델 호출)
-    await asyncio.sleep(32)  # 30초 이상 시뮬레이션
-    
-    # 더미 시 데이터 생성
-    theme_words_str = ", ".join(poem_request.theme_words)
-    
-    poems = [
-        Poem(
-            title=f"서정적인 {poem_request.poet} 스타일의 시",
-            content=f"""달빛이 흐르는 밤에
-{theme_words_str}가 속삭이네
-마음 깊은 곳에서 울려오는
-그리움의 노래
-
-({poem_request.poet} 스타일, {poem_request.length})""",
-            style="서정적"
-        ),
-        Poem(
-            title=f"서사적인 {poem_request.poet} 스타일의 시",
-            content=f"""옛날 어느 마을에
-{theme_words_str}가 살았다네
-긴 여행을 떠나며
-새로운 이야기를 써내려가네
-
-({poem_request.poet} 스타일, {poem_request.length})""",
-            style="서사적"
-        ),
-        Poem(
-            title=f"자유시 {poem_request.poet} 스타일",
-            content=f"""{theme_words_str}
-흩어져
-모여
-다시 흩어지고
-
-자유롭게
-흘러가는
-시간 속에서
-
-({poem_request.poet} 스타일, {poem_request.length})""",
-            style="자유시"
-        ),
-        Poem(
-            title=f"현대적 {poem_request.poet} 스타일의 시",
-            content=f"""스마트폰 화면에 비친
-{theme_words_str}의 모습
-디지털 세상 속에서도
-변하지 않는 마음
-
-({poem_request.poet} 스타일, {poem_request.length})""",
-            style="현대적"
+    try:
+        # SimplePoemGenerator를 사용하여 시 생성
+        # 동기 함수를 비동기로 실행 (다른 요청을 블록하지 않음)
+        result = await asyncio.to_thread(
+            poem_generator.generate_poems,
+            style=poem_request.style,
+            author_style=poem_request.author_style,
+            keywords=poem_request.keywords,
+            length=poem_request.length
         )
-    ]
-    
-    end_time = datetime.now()
-    generation_time = (end_time - start_time).total_seconds()
-    
-    return PoemResponse(
-        poems=poems,
-        generation_time=generation_time,
-        ai_model_used=poem_request.ai_model
-    )
+        
+        end_time = datetime.now()
+        generation_time = (end_time - start_time).total_seconds()
+        
+        # SimplePoemGenerator 결과에 generation_time 추가
+        result["generation_time"] = generation_time
+        
+        return PoemResponse(**result)
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"시 생성 중 오류가 발생했습니다: {str(e)}"
+        )
