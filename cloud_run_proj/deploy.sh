@@ -1,5 +1,24 @@
 #!/bin/bash
 
+# .env 파일에서 환경변수 로드
+if [ -f .env ]; then
+    echo "📋 .env 파일에서 환경변수 로드 중..."
+    export $(grep -v '^#' .env | xargs)
+else
+    echo "❌ .env 파일을 찾을 수 없습니다."
+    echo "💡 .env.example을 참고하여 .env 파일을 생성해주세요."
+    exit 1
+fi
+
+# 필수 환경변수 확인
+required_vars=("SUPABASE_URL" "SUPABASE_SERVICE_ROLE_KEY" "OPENAI_API_KEY")
+for var in "${required_vars[@]}"; do
+    if [ -z "${!var}" ]; then
+        echo "❌ 환경변수 $var가 설정되지 않았습니다."
+        exit 1
+    fi
+done
+
 # 설정 변수
 PROJECT_ID="clever-lemon"  # GCP 프로젝트 ID로 변경하세요
 SERVICE_NAME="clever-lemon-api"
@@ -31,7 +50,8 @@ gcloud run deploy $SERVICE_NAME \
     --concurrency=1000 \
     --max-instances=10 \
     --min-instances=0 \
-    --clear-base-image
+    --clear-base-image \
+    --set-env-vars="SUPABASE_URL=${SUPABASE_URL},SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY},OPENAI_API_KEY=${OPENAI_API_KEY}"
 
 # 4. 서비스 URL 가져오기
 SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format='value(status.url)')
