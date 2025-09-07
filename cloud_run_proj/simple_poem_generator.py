@@ -14,20 +14,25 @@ from dotenv import load_dotenv
 class SimplePoemGenerator:
     """간단한 시 생성기"""
 
-    def __init__(self, api_key: str = None, model: str = "gpt-4o-mini"):
+    def __init__(self, api_key: str = None):
         """
         시 생성기 초기화
 
         Args:
             api_key: OpenAI API 키 (None이면 환경변수에서 로드)
-            model: 사용할 모델명
         """
+        # 환경변수 로드
+        load_dotenv()
+        
+        # API 키 설정
         if api_key is None:
-            load_dotenv()
             api_key = os.getenv('OPENAI_API_KEY')
 
         if not api_key:
             raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다.")
+
+        # 모델 설정 (환경변수에서 로드, 없으면 기본값)
+        model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
 
         self.client = OpenAI(api_key=api_key)
         self.model = model

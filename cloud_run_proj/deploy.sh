@@ -19,6 +19,9 @@ for var in "${required_vars[@]}"; do
     fi
 done
 
+# 선택적 환경변수 기본값 설정
+OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+
 # 설정 변수
 PROJECT_ID="clever-lemon"  # GCP 프로젝트 ID로 변경하세요
 SERVICE_NAME="clever-lemon-api"
@@ -51,7 +54,7 @@ gcloud run deploy $SERVICE_NAME \
     --max-instances=10 \
     --min-instances=0 \
     --clear-base-image \
-    --set-env-vars="SUPABASE_URL=${SUPABASE_URL},SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY},OPENAI_API_KEY=${OPENAI_API_KEY}"
+    --set-env-vars="SUPABASE_URL=${SUPABASE_URL},SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY},OPENAI_API_KEY=${OPENAI_API_KEY},OPENAI_MODEL=${OPENAI_MODEL}"
 
 # 4. 서비스 URL 가져오기
 SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format='value(status.url)')
