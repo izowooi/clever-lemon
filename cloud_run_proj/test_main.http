@@ -67,16 +67,41 @@ Content-Type: application/json
 
 ###
 
-# 6. 시 생성 (30초 이상 소요 - 테스트 시 주의!)
+# 6. 실제 AI 시 생성 (OpenAI API 사용 - 시간이 걸릴 수 있음)
 POST http://127.0.0.1:8000/poems/generate
 Content-Type: application/json
 
 {
-  "style": "서정적",
-  "poet": "윤동주",
-  "theme_words": ["달", "그리움", "희망"],
-  "length": "보통",
-  "ai_model": "gpt-4"
+  "style": "낭만적인",
+  "author_style": "윤동주",
+  "keywords": ["달", "그리움", "희망"],
+  "length": "8행"
+}
+
+###
+
+# 6-2. 다른 스타일의 시 생성 테스트
+POST http://127.0.0.1:8000/poems/generate
+Content-Type: application/json
+
+{
+  "style": "우울한",
+  "author_style": "김소월",
+  "keywords": ["꽃", "바람", "이별"],
+  "length": "보통"
+}
+
+###
+
+# 6-3. 현대적 스타일 시 생성 테스트
+POST http://127.0.0.1:8000/poems/generate
+Content-Type: application/json
+
+{
+  "style": "희망적인",
+  "author_style": "나태주",
+  "keywords": ["도시", "사람", "꿈", "미래"],
+  "length": "16행"
 }
 
 ###
