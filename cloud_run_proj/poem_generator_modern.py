@@ -310,49 +310,49 @@ if __name__ == "__main__":
    length = "8행"
 
    # 1) GPT-5 계열 (Responses API)
-   # poems_v5 = gen.generate_poems(
-   #     style=style,
-   #     author_style=author_style,
-   #     keywords=keywords,
-   #     length=length,
-   #     opt=GenOptions(
-   #         model="gpt-5-mini-2025-08-07",
-   #         reasoning_effort="low",      # "low" | "medium" | "high"
-   #         max_output_tokens=2048,       # GPT-5 상한
-   #     ),
-   # )
-   # print("\n[gpt-5]\n")
-   # print(poems_v5)
-   #
-   # parsed_v5 = gen.parse_response(poems_v5, style, author_style, keywords, length)
-   # gen.display_poems(parsed_v5)
-
-
-   # 2) GPT-4o 계열 (Chat Completions)
-   poems_4o = gen.generate_poems(
+   poems_v5 = gen.generate_poems(
        style=style,
        author_style=author_style,
        keywords=keywords,
        length=length,
        opt=GenOptions(
-           model="gpt-4o-mini",
-           temperature=0.9,
-           max_tokens=2000,
+           model="gpt-5-mini-2025-08-07",
+           reasoning_effort="low",      # "low" | "medium" | "high"
+           max_output_tokens=2048,       # GPT-5 상한
        ),
    )
+   print("\n[gpt-5]\n")
+   print(poems_v5)
 
-   print("\n[gpt-4o]\n")
-   print(poems_4o)
+   parsed_v5 = gen.parse_response(poems_v5, style, author_style, keywords, length)
+   gen.display_poems(parsed_v5)
 
-   # ====== (B) GPT-4o 계열 ======
-   opt_4o = GenOptions(
-       model="gpt-4o-mini",
-       temperature=0.9,
-       max_tokens=2000,
-   )
-   poems_text_4o = gen.generate_poems(style, author_style, keywords, length, opt_4o)
-   parsed_4o = gen.parse_response(poems_text_4o, style, author_style, keywords, length)
-   gen.display_poems(parsed_4o)
+
+   # 2) GPT-4o 계열 (Chat Completions)
+   # poems_4o = gen.generate_poems(
+   #     style=style,
+   #     author_style=author_style,
+   #     keywords=keywords,
+   #     length=length,
+   #     opt=GenOptions(
+   #         model="gpt-4o-mini",
+   #         temperature=0.9,
+   #         max_tokens=2000,
+   #     ),
+   # )
+   #
+   # print("\n[gpt-4o]\n")
+   # print(poems_4o)
+   #
+   # # ====== (B) GPT-4o 계열 ======
+   # opt_4o = GenOptions(
+   #     model="gpt-4o-mini",
+   #     temperature=0.9,
+   #     max_tokens=2000,
+   # )
+   # poems_text_4o = gen.generate_poems(style, author_style, keywords, length, opt_4o)
+   # parsed_4o = gen.parse_response(poems_text_4o, style, author_style, keywords, length)
+   # gen.display_poems(parsed_4o)
 
    # print("\n" + "=" * 60)
    # print("📊 JSON 결과 (gpt-4o)")
