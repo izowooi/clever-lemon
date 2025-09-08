@@ -127,7 +127,7 @@ class SimplePoemGenerator:
             # JSON 코드 블록 제거
             content = content.replace('```json', '').replace('```', '').strip()
             
-            # JSON 파싱
+            # 일반적인 JSON 파싱 시도
             parsed = json.loads(content)
             
             return {
@@ -150,8 +150,86 @@ class SimplePoemGenerator:
             print(f"⚠️ JSON 파싱 실패: {e}")
             print(f"원본 응답: {content}")
             
+            # 여러 가지 JSON 수정 방법 시도
+            cleaned_content = self._clean_malformed_json(content)
+            try:
+                parsed = json.loads(cleaned_content)
+                print("✅ JSON 정리 후 파싱 성공")
+                return {
+                    "success": True,
+                    "request": {
+                        "style": style,
+                        "author_style": author_style,
+                        "keywords": keywords,
+                        "length": length
+                    },
+                    "poems": [
+                        parsed.get("poem1", ""),
+                        parsed.get("poem2", ""),
+                        parsed.get("poem3", ""),
+                        parsed.get("poem4", "")
+                    ]
+                }
+            except json.JSONDecodeError:
+                print("⚠️ JSON 정리 후에도 파싱 실패, 대안 파싱 사용")
+                
             # JSON 파싱 실패 시 텍스트를 4등분하여 반환
             return self._fallback_parse(content, style, author_style, keywords, length)
+
+    def _clean_malformed_json(self, content: str) -> str:
+        """JSON 파싱 오류를 수정하기 위한 정리 메서드"""
+        try:
+            # 1. 기본적인 정리
+            cleaned = content.strip()
+            
+            # 2. 코드 블록 제거 (```json, ``` 등)
+            cleaned = cleaned.replace('```json', '').replace('```', '').strip()
+            
+            # 3. 후행 쉼표 제거 (객체 끝의 쉼표)
+            import re
+            # "field": "value", } 형태의 후행 쉼표 제거
+            cleaned = re.sub(r',(\s*[}\]])', r'\1', cleaned)
+            
+            # 4. 개행 문자와 불필요한 공백 정리
+            # JSON 문자열 내부의 개행은 보존하되, 구조적 공백만 정리
+            lines = cleaned.split('\n')
+            cleaned_lines = []
+            in_string = False
+            for line in lines:
+                if not in_string:
+                    # JSON 구조 부분은 불필요한 공백 제거
+                    line = line.strip()
+                    if line:
+                        cleaned_lines.append(line)
+                else:
+                    # 문자열 내부는 원본 유지
+                    cleaned_lines.append(line)
+                
+                # 문자열 상태 추적 (간단한 버전)
+                quote_count = line.count('"') - line.count('\\"')
+                if quote_count % 2 == 1:
+                    in_string = not in_string
+            
+            cleaned = '\n'.join(cleaned_lines)
+            
+            # 5. 중복 쉼표 제거
+            cleaned = re.sub(r',+', ',', cleaned)
+            
+            # 6. 객체 사이의 불필요한 쉼표 제거
+            # }{ 패턴을 },{ 로 수정하지 않고 그대로 두기 (이미 올바른 형태일 수 있음)
+            
+            # 7. 기본적인 JSON 구조 검증
+            if not (cleaned.startswith('{') and cleaned.endswith('}')):
+                # JSON 객체가 아닌 경우 감싸기
+                if 'poem1' in cleaned and not cleaned.startswith('{'):
+                    cleaned = '{' + cleaned + '}'
+            
+            return cleaned
+            
+        except Exception as e:
+            print(f"⚠️ JSON 정리 과정에서 오류 발생: {e}")
+            # 정리 실패 시 원본 반환
+            return content
 
     def _fallback_parse(self, content: str, style: str, author_style: str, keywords: List[str], length: str) -> Dict:
         """JSON 파싱 실패시 대안 파싱"""

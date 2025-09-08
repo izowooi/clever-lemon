@@ -8,6 +8,7 @@ import os
 import re
 import json
 import sys
+from dotenv import load_dotenv
 
 # ======================
 # 공통 DTO
@@ -202,8 +203,23 @@ class ParseResult:
 # 퍼사드: 시 생성 유스케이스 (SRP)
 # ======================
 class PoemGenerator:
-   def __init__(self, client: Optional[OpenAI] = None):
-       self.client = client or OpenAI()
+   def __init__(self, client: Optional[OpenAI] = None, api_key: str = None):
+       # 환경변수 로드
+       load_dotenv()
+       
+       # OpenAI 클라이언트 설정
+       if client:
+           self.client = client
+       else:
+           # API 키 설정
+           if api_key is None:
+               api_key = os.getenv('OPENAI_API_KEY')
+           
+           if not api_key:
+               raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다.")
+           
+           self.client = OpenAI(api_key=api_key)
+       
        self.system_prompt = KoreanPoemPromptBuilder.SYSTEM_PROMPT
 
    def _build_prompt(
@@ -266,6 +282,55 @@ class PoemGenerator:
 
            # JSON 파싱 실패 시 텍스트를 4등분하여 반환
            return self._fallback_parse(content, style, author_style, keywords, length)
+
+   def _fallback_parse(self, content: str, style: str, author_style: str, keywords: List[str], length: str) -> Dict:
+       """JSON 파싱 실패시 대안 파싱"""
+       try:
+           # 시들을 구분하는 패턴으로 분할
+           poems = []
+           lines = content.split('\n')
+           current_poem = []
+           
+           for line in lines:
+               line = line.strip()
+               if line and not line.startswith('"') and not line.startswith('{') and not line.startswith('}'):
+                   current_poem.append(line)
+               elif current_poem and len(poems) < 4:
+                   poems.append('\n'.join(current_poem))
+                   current_poem = []
+           
+           # 마지막 시 추가
+           if current_poem and len(poems) < 4:
+               poems.append('\n'.join(current_poem))
+           
+           # 4편이 안 되면 원본 텍스트를 4등분
+           while len(poems) < 4:
+               poems.append(f"시 {len(poems) + 1} (파싱 실패)")
+           
+           return {
+               "success": True,
+               "request": {
+                   "style": style,
+                   "author_style": author_style,
+                   "keywords": keywords,
+                   "length": length
+               },
+               "poems": poems[:4]  # 최대 4편만
+           }
+           
+       except Exception as e:
+           print(f"❌ 대안 파싱 실패: {e}")
+           return {
+               "success": False,
+               "error": f"파싱 실패: {str(e)}",
+               "request": {
+                   "style": style,
+                   "author_style": author_style,
+                   "keywords": keywords,
+                   "length": length
+               },
+               "poems": []
+           }
 
 
    def display_poems(self, result: Dict) -> None:

@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from verify_token import verify_and_decode_supabase_jwt
-from simple_poem_generator import SimplePoemGenerator
+from poem_generator_modern import PoemGenerator, GenOptions
 
 load_dotenv()
 
@@ -21,12 +21,12 @@ if not supabase_url or not supabase_service_key:
 else:
     supabase: Client = create_client(supabase_url, supabase_service_key)
 
-# SimplePoemGenerator 인스턴스 초기화 (전역으로 재사용)
+# PoemGenerator 인스턴스 초기화 (전역으로 재사용)
 try:
-    poem_generator = SimplePoemGenerator()
-    print("✅ SimplePoemGenerator 초기화 완료")
+    poem_generator = PoemGenerator()
+    print("✅ PoemGenerator 초기화 완료")
 except Exception as e:
-    print(f"⚠️ SimplePoemGenerator 초기화 실패: {e}")
+    print(f"⚠️ PoemGenerator 초기화 실패: {e}")
     poem_generator = None
 
 app = FastAPI(title="시 생성 API", version="1.0.0")
@@ -367,23 +367,51 @@ async def generate_poems(poem_request: PoemRequest):
     start_time = datetime.now()
     
     try:
-        # SimplePoemGenerator를 사용하여 시 생성
-        # 동기 함수를 비동기로 실행 (다른 요청을 블록하지 않음)
-        result = await asyncio.to_thread(
+        # 환경변수에서 모델 정보 가져오기
+        model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+        
+        # 모델에 따른 옵션 설정
+        if model.startswith('gpt-5'):
+            # GPT-5 계열: Responses API
+            gen_options = GenOptions(
+                model=model,
+                reasoning_effort="medium",
+                max_output_tokens=2048
+            )
+        else:
+            # GPT-4o 계열: Chat Completions API
+            gen_options = GenOptions(
+                model=model,
+                temperature=0.9,
+                max_tokens=2000
+            )
+        
+        # PoemGenerator를 사용하여 시 생성 (원시 텍스트 반환)
+        raw_result = await asyncio.to_thread(
             poem_generator.generate_poems,
             style=poem_request.style,
             author_style=poem_request.author_style,
             keywords=poem_request.keywords,
-            length=poem_request.length
+            length=poem_request.length,
+            opt=gen_options
+        )
+        
+        # 응답 파싱하여 구조화된 결과 생성
+        parsed_result = poem_generator.parse_response(
+            raw_result,
+            poem_request.style,
+            poem_request.author_style,
+            poem_request.keywords,
+            poem_request.length
         )
         
         end_time = datetime.now()
         generation_time = (end_time - start_time).total_seconds()
         
-        # SimplePoemGenerator 결과에 generation_time 추가
-        result["generation_time"] = generation_time
+        # 생성 시간 추가
+        parsed_result["generation_time"] = generation_time
         
-        return PoemResponse(**result)
+        return PoemResponse(**parsed_result)
         
     except Exception as e:
         raise HTTPException(
