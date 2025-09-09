@@ -278,7 +278,16 @@ class PoemGenerator:
 
        except json.JSONDecodeError as e:
            print(f"⚠️ JSON 파싱 실패: {e}")
-           print(f"원본 응답: {content}")
+           print(f"📋 원본 응답 길이: {len(content)}")
+           print(f"📝 원본 응답 내용:")
+           print("=" * 50)
+           print(repr(content))  # repr로 출력하여 숨겨진 문자들까지 보이도록 함
+           print("=" * 50)
+           if content.strip() == "":
+               print("⚠️ 빈 응답이 수신되었습니다!")
+           else:
+               print(f"📄 첫 100자: {content[:100]}")
+               print(f"📄 마지막 100자: {content[-100:]}")
 
            # JSON 파싱 실패 시 텍스트를 4등분하여 반환
            return self._fallback_parse(content, style, author_style, keywords, length)
