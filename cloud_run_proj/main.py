@@ -451,7 +451,7 @@ async def generate_poems(poem_request: PoemRequest):
             # GPT-5 계열: Responses API
             gen_options = GenOptions(
                 model=model,
-                reasoning_effort="medium",
+                reasoning_effort="low",
                 max_output_tokens=2048
             )
         else:
