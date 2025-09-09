@@ -66,6 +66,7 @@ class PaymentRequest(BaseModel):
     payment_info: PaymentInfo
 
 class PoemRequest(BaseModel):
+    user_id: str  # 사용자 ID
     style: str  # 성향 (예: "낭만적인", "우울한", "희망적인")
     author_style: str  # 작가 스타일 (예: "김소월", "윤동주")
     keywords: List[str]  # 포함할 단어들 (3-5개)
@@ -76,6 +77,7 @@ class PoemResponse(BaseModel):
     request: dict  # 요청 정보
     poems: List[str]  # 생성된 시들 (제목 포함)
     generation_time: Optional[float] = None
+    remaining_credits: Optional[int] = None
     error: Optional[str] = None
 
 class TokenRequest(BaseModel):
@@ -310,7 +312,7 @@ async def update_user_settings(user_id: str, settings_update: UserSettingsUpdate
     current_settings = fake_user_settings[user_id].copy()
     
     # 업데이트할 필드만 변경
-    update_data = settings_update.dict(exclude_unset=True)
+    update_data = settings_update.model_dump(exclude_unset=True)
     current_settings.update(update_data)
     
     # 더미 데이터베이스 업데이트
@@ -354,21 +356,95 @@ async def approve_payment(payment_request: PaymentRequest):
         "timestamp": datetime.now().isoformat()
     }
 
+# 크레딧 검증 함수
+def validate_user_credit(user_id: str) -> int:
+    """사용자의 크레딧을 확인하고 반환합니다"""
+    if not supabase:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase 클라이언트가 설정되지 않았습니다"
+        )
+    
+    try:
+        user_data = supabase.table("users_credits").select("*").eq("user_id", user_id).execute()
+        
+        if not user_data.data:
+            raise HTTPException(
+                status_code=404,
+                detail="등록되지 않은 사용자입니다"
+            )
+        
+        credits = user_data.data[0]["credits"]
+        
+        if credits <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="크레딧이 부족합니다. 크레딧을 충전해주세요"
+            )
+        
+        return credits
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"크레딧 확인 중 오류가 발생했습니다: {str(e)}"
+        )
+
+# 크레딧 차감 함수
+def deduct_user_credit(user_id: str) -> int:
+    """사용자의 크레딧을 1 차감하고 남은 크레딧을 반환합니다"""
+    if not supabase:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase 클라이언트가 설정되지 않았습니다"
+        )
+    
+    try:
+        # 현재 크레딧 조회 후 1 차감
+        current_credits_result = supabase.table("users_credits").select("credits").eq("user_id", user_id).execute()
+        current_credits = current_credits_result.data[0]["credits"]
+        
+        result = supabase.table("users_credits").update({
+            "credits": current_credits - 1,
+            "updated_at": datetime.now().isoformat()
+        }).eq("user_id", user_id).execute()
+        
+        if result.data:
+            return result.data[0]["credits"]
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="크레딧 차감에 실패했습니다"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"크레딧 차감 중 오류가 발생했습니다: {str(e)}"
+        )
+
 # 6. 실제 AI 시 생성
 @app.post("/poems/generate", response_model=PoemResponse)
 async def generate_poems(poem_request: PoemRequest):
-    """OpenAI를 이용해 4편의 시를 생성합니다"""
+    """OpenAI를 이용해 4편의 시를 생성합니다 (크레딧 검증 포함)"""
     if not poem_generator:
         raise HTTPException(
             status_code=500,
             detail="시 생성기가 초기화되지 않았습니다. OpenAI API 키를 확인해주세요."
         )
     
+    # 크레딧 검증
+    validate_user_credit(poem_request.user_id)
+    
     start_time = datetime.now()
     
     try:
         # 환경변수에서 모델 정보 가져오기
-        model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+        model = os.getenv('OPENAI_MODEL', 'gpt-5-mini-2025-08-07')
         
         # 모델에 따른 옵션 설정
         if model.startswith('gpt-5'):
@@ -405,14 +481,20 @@ async def generate_poems(poem_request: PoemRequest):
             poem_request.length
         )
         
+        # 시 생성 성공 후 크레딧 차감
+        remaining_credits = deduct_user_credit(poem_request.user_id)
+        
         end_time = datetime.now()
         generation_time = (end_time - start_time).total_seconds()
         
-        # 생성 시간 추가
+        # 생성 시간과 남은 크레딧 정보 추가
         parsed_result["generation_time"] = generation_time
+        parsed_result["remaining_credits"] = remaining_credits
         
         return PoemResponse(**parsed_result)
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
