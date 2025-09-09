@@ -144,77 +144,8 @@ async def ping():
         "version": "1.0.0"
     }
 
-# 7. 토큰 인증 및 검증
-@app.post("/auth/verify", response_model=TokenResponse)
-async def verify_token(token_request: TokenRequest):
-    """Supabase JWT 토큰을 검증하고 사용자 정보를 반환합니다"""
-    try:
-        claims = verify_and_decode_supabase_jwt(token_request.token)
-        
-        return TokenResponse(
-            user_id=claims["sub"],
-            role=claims.get("role"),
-            email=claims.get("email"),
-            exp=claims["exp"],
-            message="토큰 검증이 성공적으로 완료되었습니다"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=401,
-            detail=f"토큰 검증 실패: {str(e)}"
-        )
 
-# 8. 회원가입 (테스트용) - user_id로 직접 등록
-@app.post("/auth/register-test", response_model=UserRegistrationResponse)
-async def register_user_test(request: UserRegistrationTestRequest):
-    """테스트용: user_id를 직접 받아서 회원가입 처리"""
-    if not supabase:
-        raise HTTPException(
-            status_code=500,
-            detail="Supabase 클라이언트가 설정되지 않았습니다"
-        )
-    
-    try:
-        # 기존 사용자 확인
-        existing_user = supabase.table("users_credits").select("*").eq("user_id", request.user_id).execute()
-        
-        if existing_user.data:
-            raise HTTPException(
-                status_code=409,
-                detail="이미 등록된 사용자입니다"
-            )
-        
-        # 새 사용자 등록
-        result = supabase.table("users_credits").insert({
-            "user_id": request.user_id,
-            "credits": request.initial_credits,
-            "updated_at": datetime.now().isoformat()
-        }).execute()
-        
-        if result.data:
-            user_data = result.data[0]
-            return UserRegistrationResponse(
-                success=True,
-                user_id=user_data["user_id"],
-                credits=user_data["credits"],
-                message="테스트 회원가입이 성공적으로 완료되었습니다",
-                created_at=user_data.get("updated_at")
-            )
-        else:
-            raise HTTPException(
-                status_code=500,
-                detail="데이터베이스 등록에 실패했습니다"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"회원가입 처리 중 오류가 발생했습니다: {str(e)}"
-        )
-
-# 9. 회원가입 (실제용) - access_token으로 등록
+# 회원가입 (실제용) - access_token으로 등록
 @app.post("/auth/register", response_model=UserRegistrationResponse)
 async def register_user(request: UserRegistrationRequest):
     """실제용: access_token을 검증하고 회원가입 처리"""
@@ -273,57 +204,8 @@ async def register_user(request: UserRegistrationRequest):
             detail=f"회원가입 처리 중 오류가 발생했습니다: {str(e)}"
         )
 
-# 2. 유저 재화 정보 조회
-@app.get("/users/{user_id}/currency", response_model=UserCurrency)
-async def get_user_currency(user_id: str):
-    """유저의 재화 정보를 조회합니다"""
-    if user_id not in fake_user_currency:
-        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
-    
-    currency_data = fake_user_currency[user_id]
-    return UserCurrency(
-        user_id=user_id,
-        coins=currency_data["coins"],
-        gems=currency_data["gems"],
-        premium_points=currency_data["premium_points"]
-    )
 
-# 3. 유저 설정 정보 조회
-@app.get("/users/{user_id}/settings", response_model=UserSettings)
-async def get_user_settings(user_id: str):
-    """유저의 설정 정보를 조회합니다"""
-    if user_id not in fake_user_settings:
-        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
-    
-    settings_data = fake_user_settings[user_id]
-    return UserSettings(
-        user_id=user_id,
-        **settings_data
-    )
-
-# 4. 유저 설정 정보 갱신
-@app.put("/users/{user_id}/settings", response_model=UserSettings)
-async def update_user_settings(user_id: str, settings_update: UserSettingsUpdate):
-    """유저의 설정 정보를 갱신합니다"""
-    if user_id not in fake_user_settings:
-        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다")
-    
-    # 기존 설정 가져오기
-    current_settings = fake_user_settings[user_id].copy()
-    
-    # 업데이트할 필드만 변경
-    update_data = settings_update.model_dump(exclude_unset=True)
-    current_settings.update(update_data)
-    
-    # 더미 데이터베이스 업데이트
-    fake_user_settings[user_id] = current_settings
-    
-    return UserSettings(
-        user_id=user_id,
-        **current_settings
-    )
-
-# 5. 결제 승인
+# 결제 승인
 @app.post("/payments/approve")
 async def approve_payment(payment_request: PaymentRequest):
     """결제를 승인하고 재화를 지급합니다"""
