@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/implementations/supabase_google_auth_adapter.dart';
+import '../services/implementations/supabase_apple_auth_adapter.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,13 +10,15 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final SupabaseGoogleAuthAdapter _authAdapter = SupabaseGoogleAuthAdapter();
+  final SupabaseGoogleAuthAdapter _googleAuthAdapter = SupabaseGoogleAuthAdapter();
+  final SupabaseAppleAuthAdapter _appleAuthAdapter = SupabaseAppleAuthAdapter();
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _authAdapter.initialize();
+    _googleAuthAdapter.initialize();
+    _appleAuthAdapter.initialize();
   }
 
   Future<void> _handleGoogleSignIn() async {
@@ -24,7 +27,53 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final result = await _authAdapter.signIn();
+      final result = await _googleAuthAdapter.signIn();
+
+      if (result.isSuccess) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('로그인 성공!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('로그인 실패: ${result.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('로그인 오류: ${error.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await _appleAuthAdapter.signIn();
 
       if (result.isSuccess) {
         if (mounted) {
@@ -116,20 +165,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
             const SizedBox(height: 16),
 
-            // 애플 로그인 버튼 (iOS에서만 표시)
-            if (Theme.of(context).platform == TargetPlatform.iOS) ...[
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : () {
-                    // TODO: Apple 로그인 구현
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Apple 로그인은 곧 지원될 예정입니다.'),
-                      ),
-                    );
-                  },
+            // 애플 로그인 버튼
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _handleAppleSignIn,
                   icon: const Icon(Icons.apple, color: Colors.white),
                   label: const Text('Apple로 계속하기'),
                   style: ElevatedButton.styleFrom(
@@ -142,8 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-            ],
 
             const SizedBox(height: 32),
 
