@@ -2,6 +2,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../interfaces/auth_adapter.dart';
+import '../interfaces/auth_api_service.dart';
+import 'http_auth_api_service.dart';
 import '../../main.dart';
 
 class SupabaseGoogleAuthAdapter implements AuthAdapter {
@@ -9,6 +11,7 @@ class SupabaseGoogleAuthAdapter implements AuthAdapter {
   static const String googleIosClientId = '1043360097075-7p2ilut5e13t7c5bjni97ag4a9ogtsb9.apps.googleusercontent.com';
   
   GoogleSignIn? _googleSignIn;
+  final AuthApiService _authApiService = HttpAuthApiService();
   
   @override
   Future<void> initialize() async {
@@ -70,6 +73,15 @@ class SupabaseGoogleAuthAdapter implements AuthAdapter {
           print('❌ This does not appear to be a valid JWT token');
         }
 
+        final registerRequest = RegisterRequest(accessToken: accessToken);
+        final registerResult = await _authApiService.register(registerRequest);
+        
+        if (registerResult.isSuccess) {
+          print('회원가입 API 호출 성공: ${registerResult.message}');
+        } else {
+          print('회원가입 API 호출 실패: ${registerResult.message}');
+        }
+
         return AuthResult.success(
           'Google 로그인 성공!\n이메일: ${user.email ?? 'N/A'}\nUID: ${user.id}',
           extra: {
@@ -77,6 +89,7 @@ class SupabaseGoogleAuthAdapter implements AuthAdapter {
             'email': user.email,
             'name': user.userMetadata?['full_name'] ?? googleUser.displayName,
             'provider': 'google',
+            'register_result': registerResult,
           },
         );
       } else {

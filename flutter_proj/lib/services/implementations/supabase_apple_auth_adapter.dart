@@ -2,9 +2,12 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../interfaces/auth_adapter.dart';
+import '../interfaces/auth_api_service.dart';
+import 'http_auth_api_service.dart';
 import '../../main.dart';
 
 class SupabaseAppleAuthAdapter implements AuthAdapter {
+  final AuthApiService _authApiService = HttpAuthApiService();
   
   @override
   Future<void> initialize() async {
@@ -59,6 +62,15 @@ class SupabaseAppleAuthAdapter implements AuthAdapter {
           print('❌ This does not appear to be a valid JWT token');
         }
 
+        final registerRequest = RegisterRequest(accessToken: accessToken);
+        final registerResult = await _authApiService.register(registerRequest);
+        
+        if (registerResult.isSuccess) {
+          print('회원가입 API 호출 성공: ${registerResult.message}');
+        } else {
+          print('회원가입 API 호출 실패: ${registerResult.message}');
+        }
+
         // Apple에서 제공하는 이름 정보 처리
         String? displayName;
         if (credential.givenName != null && credential.familyName != null) {
@@ -72,6 +84,7 @@ class SupabaseAppleAuthAdapter implements AuthAdapter {
             'email': user.email,
             'name': displayName ?? user.userMetadata?['full_name'],
             'provider': 'apple',
+            'register_result': registerResult,
           },
         );
       } else {
