@@ -25,7 +25,7 @@ OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
 # 설정 변수
 PROJECT_ID="clever-lemon"  # GCP 프로젝트 ID로 변경하세요
 SERVICE_NAME="clever-lemon-api"
-REGION="asia-northeast3"  # 서울 리전
+REGION="asia-northeast1"  # 도쿄 리전
 
 echo "🚀 Google Cloud Run 배포 시작..."
 

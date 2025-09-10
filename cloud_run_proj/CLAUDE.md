@@ -49,14 +49,14 @@ Use the provided HTTP test file:
 # Manual deployment
 gcloud run deploy clever-lemon-api \
     --source . \
-    --region=asia-northeast3 \
+    --region=asia-northeast1 \
     --platform=managed \
     --allow-unauthenticated
 ```
 
-**Production URL**: https://clever-lemon-api-1043360097075.asia-northeast3.run.app/
-- API Documentation: https://clever-lemon-api-1043360097075.asia-northeast3.run.app/docs
-- Health Check: https://clever-lemon-api-1043360097075.asia-northeast3.run.app/ping
+**Production URL**: https://clever-lemon.zowoo.uk/
+- API Documentation: https://clever-lemon.zowoo.uk/docs
+- Health Check: https://clever-lemon.zowoo.uk/ping
 
 ### Container Build
 ```bash

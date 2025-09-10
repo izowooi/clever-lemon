@@ -49,14 +49,14 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 # 수동 배포
 gcloud run deploy clever-lemon-api \
     --source . \
-    --region=asia-northeast3 \
+    --region=asia-northeast1 \
     --platform=managed \
     --allow-unauthenticated
 ```
 
-**프로덕션 URL**: https://clever-lemon-api-1043360097075.asia-northeast3.run.app/
-- API 문서: https://clever-lemon-api-1043360097075.asia-northeast3.run.app/docs
-- 헬스체크: https://clever-lemon-api-1043360097075.asia-northeast3.run.app/ping
+**프로덕션 URL**: https://clever-lemon.zowoo.uk/
+- API 문서: https://clever-lemon.zowoo.uk/docs
+- 헬스체크: https://clever-lemon.zowoo.uk/ping
 
 ### 컨테이너 빌드
 ```bash

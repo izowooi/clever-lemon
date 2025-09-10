@@ -188,7 +188,7 @@ sequenceDiagram
 # Google Cloud CLI 설정 후
 gcloud run deploy clever-lemon \
     --source . \
-    --region=asia-northeast3 \
+    --region=asia-northeast1 \
     --platform=managed \
     --allow-unauthenticated
 ```
