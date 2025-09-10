@@ -5,7 +5,7 @@ import '../interfaces/poem_api_service.dart';
 import '../interfaces/auth_api_service.dart';
 
 class HttpPoemApiService implements PoemApiService {
-  static const String baseUrl = 'https://clever-lemon-api-1043360097075.asia-northeast3.run.app';
+  static const String baseUrl = 'https://clever-lemon.zowoo.uk';
   
   @override
   Future<ApiResult<Map<String, dynamic>>> generatePoem(PoemGenerateRequest request) async {

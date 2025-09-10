@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../interfaces/auth_api_service.dart';
 
 class HttpAuthApiService implements AuthApiService {
-  static const String baseUrl = 'https://clever-lemon-api-1043360097075.asia-northeast3.run.app';
+  static const String baseUrl = 'https://clever-lemon.zowoo.uk';
   
   @override
   Future<ApiResult<Map<String, dynamic>>> register(RegisterRequest request) async {
