@@ -21,7 +21,7 @@ class _RemoteConfigTestHarnessState extends ConsumerState<RemoteConfigTestHarnes
   final Map<String, Object> _defaultValues = {
     'review_versioncode_aos': 1,
     'review_versioncode_ios': 1,
-    'api_base_url': 'https://clever-lemon-api-1043360097075.asia-northeast3.run.app',
+    'api_base_url': 'https://clever-lemon.zowoo.uk',
   };
 
   Future<void> _initialize(WidgetRef ref) async {
