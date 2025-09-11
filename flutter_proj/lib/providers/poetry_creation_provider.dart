@@ -226,18 +226,21 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
 
   /// 문자열 형태의 시를 파싱하여 제목과 내용을 분리합니다
   Map<String, String> _parsePoemString(String poemString) {
-    final lines = poemString.split('\n');
     String title = '제목 없음';
     String content = poemString;
     
-    // 첫 번째 줄에서 "제목:" 패턴을 찾아 제목 추출
-    if (lines.isNotEmpty) {
-      final firstLine = lines[0];
-      if (firstLine.startsWith('제목:')) {
-        title = firstLine.substring(3).trim();
-        // 제목 줄을 제외한 나머지를 내용으로 설정
-        if (lines.length > 1) {
-          content = lines.skip(1).join('\n').trim();
+    // '\n\n'으로 제목과 내용을 분리
+    final doubleLfIndex = poemString.indexOf('\n\n');
+    if (doubleLfIndex != -1) {
+      title = poemString.substring(0, doubleLfIndex).trim();
+      content = poemString.substring(doubleLfIndex + 2).trim();
+    } else {
+      // '\n\n'이 없는 경우 첫 번째 줄을 제목으로 처리
+      final lines = poemString.split('\n');
+      if (lines.isNotEmpty) {
+        title = lines[0].trim();
+      if (lines.length > 1) {
+        content = lines.skip(1).join('\n').trim();
         }
       }
     }
