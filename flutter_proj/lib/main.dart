@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'config/api_config.dart';
 
 // Supabase 설정
 const supabaseUrl = 'https://tnihnfuwhhtvbkmhwiut.supabase.co';
@@ -13,6 +14,9 @@ final supabase = Supabase.instance.client;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // API 환경 정보 출력
+  ApiConfig.printCurrentEnvironment();
 
   // Supabase 초기화
   await Supabase.initialize(

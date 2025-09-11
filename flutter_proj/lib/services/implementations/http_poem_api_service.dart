@@ -3,14 +3,14 @@ import 'package:http/http.dart' as http;
 
 import '../interfaces/poem_api_service.dart';
 import '../interfaces/auth_api_service.dart';
+import '../../config/api_config.dart';
 
 class HttpPoemApiService implements PoemApiService {
-  static const String baseUrl = 'https://clever-lemon.zowoo.uk';
   
   @override
   Future<ApiResult<Map<String, dynamic>>> generatePoem(PoemGenerateRequest request) async {
     try {
-      final url = Uri.parse('$baseUrl/poems/generate');
+      final url = Uri.parse(ApiConfig.poemGenerateUrl);
       final response = await http.post(
         url,
         headers: {
