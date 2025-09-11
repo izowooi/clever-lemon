@@ -187,7 +187,18 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
       final poems = apiData['poems'] as List;
       for (int i = 0; i < poems.length; i++) {
         final poem = poems[i];
-        if (poem is Map<String, dynamic>) {
+        if (poem is String) {
+          // 문자열에서 제목과 내용을 파싱
+          final parsedPoem = _parsePoemString(poem);
+          final template = PoetryTemplate(
+            id: 'api_${DateTime.now().millisecondsSinceEpoch}_$i',
+            title: parsedPoem['title'] ?? '시 ${i + 1}',
+            content: parsedPoem['content'] ?? poem,
+            keywords: keywords,
+            createdAt: DateTime.now(),
+          );
+          templates.add(template);
+        } else if (poem is Map<String, dynamic>) {
           final template = PoetryTemplate(
             id: 'api_${DateTime.now().millisecondsSinceEpoch}_$i',
             title: poem['title'] ?? '제목 없음',
@@ -211,6 +222,30 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
     }
     
     return templates;
+  }
+
+  /// 문자열 형태의 시를 파싱하여 제목과 내용을 분리합니다
+  Map<String, String> _parsePoemString(String poemString) {
+    final lines = poemString.split('\n');
+    String title = '제목 없음';
+    String content = poemString;
+    
+    // 첫 번째 줄에서 "제목:" 패턴을 찾아 제목 추출
+    if (lines.isNotEmpty) {
+      final firstLine = lines[0];
+      if (firstLine.startsWith('제목:')) {
+        title = firstLine.substring(3).trim();
+        // 제목 줄을 제외한 나머지를 내용으로 설정
+        if (lines.length > 1) {
+          content = lines.skip(1).join('\n').trim();
+        }
+      }
+    }
+    
+    return {
+      'title': title,
+      'content': content,
+    };
   }
 
   /// 템플릿을 선택하고 편집 단계로 이동합니다
