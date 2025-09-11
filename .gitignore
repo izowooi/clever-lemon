@@ -127,3 +127,4 @@ flutter_proj/.claude/settings.local.json
 cloud_run_proj/.env
 cloud_run_proj/docs
 /flutter_proj/documents
+/cloud_run_proj/documents
