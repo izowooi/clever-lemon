@@ -363,6 +363,23 @@ async def generate_poems(poem_request: PoemRequest):
             poem_request.length
         )
         
+        # 파싱 결과 확인 - 실패한 경우 크레딧 차감하지 않고 에러 응답
+        if not parsed_result.get("success", False):
+            end_time = datetime.now()
+            generation_time = (end_time - start_time).total_seconds()
+            parsed_result["generation_time"] = generation_time
+            
+            # 부적절한 응답이나 파싱 실패 시 422 상태코드로 응답
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": parsed_result.get("error", "시 생성에 실패했습니다"),
+                    "error_code": parsed_result.get("error_code", "GENERATION_FAILED"),
+                    "generation_time": generation_time,
+                    "retry_recommended": True
+                }
+            )
+        
         # 시 생성 성공 후 크레딧 차감
         remaining_credits = deduct_user_credit(poem_request.user_id)
         

@@ -44,9 +44,11 @@ class KoreanPoemPromptBuilder:
    """
 
    SYSTEM_PROMPT: str = (
-       "당신은 한국 문학에 정통한 시인입니다. "
-       "주어진 조건에 맞춰 감동적이고 아름다운 한국어 시를 4편 작성합니다. "
-       "각 시는 독창적이고 서로 다른 관점과 표현을 사용해야 합니다."
+       "당신은 한국 문학에 정통한 전문 시인입니다. "
+       "주어진 조건에 맞춰 감동적이고 아름다운 한국어 시를 정확히 4편 작성합니다. "
+       "각 시는 독창적이고 서로 다른 관점과 표현을 사용해야 합니다. "
+       "절대로 사과문이나 설명문으로 시작하지 마세요. "
+       "오직 시 작품만을 창작하세요."
    )
 
    @staticmethod
@@ -65,30 +67,36 @@ class KoreanPoemPromptBuilder:
        keywords_str: List[str] = [k.strip() for k in keywords if str(k).strip()]
        kw_str = ", ".join(keywords_str) if keywords_str else "제한 없음"
 
-       prompt = f"""다음 조건에 맞춰 4편의 시를 작성해주세요.
+       prompt = f"""다음 조건에 맞춰 정확히 4편의 시를 창작하세요.
 
-       조건:
-       • 성향: {style}
-       • 작가 스타일: {author_style}
-       • 포함 단어: '{kw_str}'
-       • 길이: {length}
+조건:
+• 성향: {style}
+• 작가 스타일: {author_style}  
+• 포함 단어: '{kw_str}'
+• 길이: {length}
 
-       요구사항:
-       • 각 시는 제목을 포함하여 작성하세요
-       • 지정된 단어들을 자연스럽게 녹여내세요
-       • 은유와 상징을 적절히 활용하세요
-       • 감정과 정서가 잘 전달되도록 작성하세요
-       • 리듬감과 운율을 고려하세요
-       • 4편의 시는 서로 다른 관점과 표현을 사용하세요
+창작 지침:
+• 각 시는 반드시 제목으로 시작하세요
+• 지정된 단어들을 자연스럽게 녹여내세요
+• {author_style} 작가의 문체와 정서를 반영하세요
+• 은유와 상징을 적절히 활용하세요
+• 감정과 정서가 잘 전달되도록 작성하세요
+• 리듬감과 운율을 고려하세요
+• 4편의 시는 서로 다른 관점과 표현을 사용하세요
 
-       최종 출력은 아래 JSON 형식을 그대로 지켜 주세요:
+중요한 제약사항:
+• 절대로 "죄송합니다", "~할 수는 없지만", "~해드립니다" 같은 사과나 설명으로 시작하지 마세요
+• 직접적으로 시 작품만 창작하세요
+• 메타 언급이나 부가 설명은 금지합니다
 
-       {{
-         "poem1": "첫 번째 시 (제목 포함)",
-         "poem2": "두 번째 시 (제목 포함)",
-         "poem3": "세 번째 시 (제목 포함)",
-         "poem4": "네 번째 시 (제목 포함)"
-       }}"""
+최종 출력은 반드시 아래 JSON 형식만 사용하세요:
+
+{{
+  "poem1": "첫 번째 시 제목\n\n첫 번째 시 본문...",
+  "poem2": "두 번째 시 제목\n\n두 번째 시 본문...",
+  "poem3": "세 번째 시 제목\n\n세 번째 시 본문...",
+  "poem4": "네 번째 시 제목\n\n네 번째 시 본문..."
+}}"""
 
        return prompt
 
@@ -250,6 +258,35 @@ class PoemGenerator:
        return adapter.generate(prompt, opt)
 
 
+   def _validate_poem_content(self, poem: str) -> bool:
+       """시 내용이 올바른지 검증 (사과문이나 메타 언급 체크)"""
+       if not poem or not poem.strip():
+           return False
+           
+       # 금지된 시작 패턴들
+       forbidden_starts = [
+           "죄송합니다",
+           "죄송하지만", 
+           "미안합니다",
+           "할 수는 없지만",
+           "해드립니다",
+           "써드립니다",
+           "작성해드립니다",
+           "만들어드립니다",
+           "그대로 재현할 수는 없지만",
+           "정확한 문체를 그대로",
+           "님의 정확한",
+           "정확히 따라할 수는"
+       ]
+       
+       poem_start = poem.strip()[:50].lower()  # 첫 50자만 체크
+       
+       for forbidden in forbidden_starts:
+           if forbidden.lower() in poem_start:
+               return False
+       
+       return True
+
    # ---------- 파싱 ----------
    def parse_response(self, content: str, style: str, author_style: str, keywords: List[str], length: str) -> Dict:
        """OpenAI 응답 파싱"""
@@ -259,6 +296,30 @@ class PoemGenerator:
 
            # JSON 파싱
            parsed = json.loads(content)
+           
+           poems = [
+               parsed.get("poem1", ""),
+               parsed.get("poem2", ""),
+               parsed.get("poem3", ""),
+               parsed.get("poem4", "")
+           ]
+           
+           # 각 시의 내용을 검증
+           for i, poem in enumerate(poems, 1):
+               if not self._validate_poem_content(poem):
+                   print(f"⚠️ 시 {i}번에서 부적절한 내용 감지: {poem[:100]}...")
+                   return {
+                       "success": False,
+                       "error": "AI가 부적절한 응답을 생성했습니다. 다시 시도해주세요.",
+                       "error_code": "INAPPROPRIATE_RESPONSE",
+                       "request": {
+                           "style": style,
+                           "author_style": author_style,
+                           "keywords": keywords,
+                           "length": length
+                       },
+                       "poems": []
+                   }
 
            return {
                "success": True,
@@ -268,12 +329,7 @@ class PoemGenerator:
                    "keywords": keywords,
                    "length": length
                },
-               "poems": [
-                   parsed.get("poem1", ""),
-                   parsed.get("poem2", ""),
-                   parsed.get("poem3", ""),
-                   parsed.get("poem4", "")
-               ]
+               "poems": poems
            }
 
        except json.JSONDecodeError as e:
@@ -289,8 +345,19 @@ class PoemGenerator:
                print(f"📄 첫 100자: {content[:100]}")
                print(f"📄 마지막 100자: {content[-100:]}")
 
-           # JSON 파싱 실패 시 텍스트를 4등분하여 반환
-           return self._fallback_parse(content, style, author_style, keywords, length)
+           # JSON 파싱 실패 시 실패 응답 반환
+           return {
+               "success": False,
+               "error": "AI 응답 파싱에 실패했습니다. 다시 시도해주세요.",
+               "error_code": "PARSING_FAILED", 
+               "request": {
+                   "style": style,
+                   "author_style": author_style,
+                   "keywords": keywords,
+                   "length": length
+               },
+               "poems": []
+           }
 
    def _fallback_parse(self, content: str, style: str, author_style: str, keywords: List[str], length: str) -> Dict:
        """JSON 파싱 실패시 대안 파싱"""
