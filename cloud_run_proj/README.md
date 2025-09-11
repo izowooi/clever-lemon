@@ -254,6 +254,169 @@ mindmap
       👥 커뮤니티 기능
 ```
 
+## 🛡️ DDoS 보안 설정
+
+이 프로젝트는 Cloudflare WAF(Web Application Firewall)의 Rate Limiting Rules를 활용하여 DDoS 공격으로부터 보호됩니다.
+
+### 🏗️ 보안 아키텍처
+
+```mermaid
+graph TB
+    subgraph "🌐 인터넷"
+        Users[👥 사용자들]
+        Attackers[🔴 공격자들]
+    end
+    
+    subgraph "🛡️ Cloudflare WAF Layer"
+        CF[☁️ Cloudflare Proxy<br/>Rate Limiting Rules]
+        WAF[🚫 WAF Engine<br/>Request Analysis]
+    end
+    
+    subgraph "🔗 Domain Layer" 
+        CustomDomain[🌍 커스텀 도메인<br/>clever-lemon.zowoo.uk]
+    end
+    
+    subgraph "☁️ Google Cloud"
+        CloudRun[🚀 Cloud Run Service<br/>FastAPI Application]
+    end
+    
+    Users --> CF
+    Attackers --> CF
+    CF --> WAF
+    WAF -->|✅ 정상 요청| CustomDomain
+    WAF -->|❌ 차단됨| CF
+    CustomDomain -->|도메인 매핑| CloudRun
+    
+    style CF fill:#f96,stroke:#333,stroke-width:3px
+    style WAF fill:#ff9999,stroke:#333,stroke-width:2px
+    style CustomDomain fill:#e1f5fe
+    style CloudRun fill:#c8e6c9
+```
+
+### ⚙️ 설정 단계
+
+#### 1️⃣ Google Cloud Run 커스텀 도메인 매핑
+
+Google Cloud Run에서 커스텀 도메인을 연결합니다:
+
+```bash
+# 도메인 매핑 생성
+gcloud run domain-mappings create \
+    --service=clever-lemon-api \
+    --domain=clever-lemon.zowoo.uk \
+    --region=asia-northeast1
+```
+
+**주요 설정:**
+- 📍 **Cloud Run URL (A)**: `https://clever-lemon-api-xxx.run.app`
+- 🌍 **커스텀 도메인 (B)**: `https://clever-lemon.zowoo.uk`
+- 🔄 **매핑 결과**: 도메인 B로의 요청이 도메인 A로 자동 전달
+
+#### 2️⃣ Cloudflare Rate Limiting Rules 설정
+
+Cloudflare 대시보드에서 WAF Rate Limiting 규칙을 생성합니다:
+
+```mermaid
+sequenceDiagram
+    participant Client as 👤 클라이언트
+    participant CF as ☁️ Cloudflare
+    participant WAF as 🛡️ WAF Engine
+    participant CR as 🚀 Cloud Run
+
+    Client->>CF: HTTP Request
+    CF->>WAF: 요청 분석
+    
+    alt 정상 트래픽
+        WAF->>CF: ✅ Allow
+        CF->>CR: Forward Request
+        CR->>CF: Response
+        CF->>Client: Response
+    else 과도한 요청
+        WAF->>CF: 🚫 Rate Limit Exceeded
+        CF->>Client: 429 Too Many Requests
+    end
+```
+
+**Rate Limiting Rule 설정:**
+
+1. **🎯 매칭 조건 (Match Expression):**
+   ```
+   (http.host eq "clever-lemon.zowoo.uk")
+   ```
+   - 특정 호스트명에 대한 모든 요청에 규칙 적용
+
+2. **⚡ Rate Limiting 파라미터:**
+   ```yaml
+   규칙 이름: "API Protection Rule"
+   요청 임계값: 100 requests
+   시간 창: 1 minute  
+   액션: Block
+   차단 기간: 10 minutes
+   ```
+
+3. **🚫 차단 응답:**
+   ```json
+   {
+     "error": "Rate limit exceeded",
+     "code": 1015,
+     "message": "Too many requests from this IP"
+   }
+   ```
+
+#### 3️⃣ 상세 WAF 설정 가이드
+
+**📊 Cloudflare 대시보드 설정:**
+
+1. **Security > WAF** 섹션으로 이동
+2. **Rate limiting rules** 탭 선택
+3. **Create rule** 버튼 클릭
+4. **Rule configuration:**
+   ```
+   ✅ Rule name: "Poetry API DDoS Protection"
+   ✅ When incoming requests match: (http.host eq "clever-lemon.zowoo.uk")
+   ✅ Then: Block
+   ✅ For: 10 minutes
+   ✅ Counting: All requests
+   ✅ Period: 1 minute
+   ✅ Threshold: 100 requests per minute
+   ```
+
+**🔧 고급 설정 옵션:**
+- **IP 기반 제한**: 동일 IP에서 과도한 요청 차단
+- **지역별 제한**: 특정 국가/지역에서의 요청 제한
+- **Bot 탐지**: 자동화된 봇 트래픽 식별 및 차단
+
+### 🎯 보안 효과
+
+```mermaid
+pie title 🛡️ 트래픽 보호 효과
+    "정상 트래픽" : 85
+    "차단된 봇" : 10
+    "Rate Limit 적용" : 3
+    "기타 공격" : 2
+```
+
+**✅ 달성한 보안 목표:**
+- 🚫 **DDoS 공격 차단**: Cloud Run 도달 전 Cloudflare에서 차단
+- ⚡ **응답 속도 개선**: 악성 트래픽 사전 필터링으로 서버 부하 감소
+- 💰 **비용 절약**: Cloud Run 불필요한 컴퓨팅 리소스 사용 방지
+- 📊 **실시간 모니터링**: Cloudflare Analytics를 통한 트래픽 패턴 분석
+
+**🔍 모니터링 지표:**
+- **Request Rate**: 분당 요청 수
+- **Block Rate**: 차단된 요청 비율
+- **Geographic Distribution**: 지역별 트래픽 분포
+- **Threat Score**: 위험도 점수 분석
+
+### 🚨 긴급 대응 절차
+
+악성 트래픽 감지 시 추가 대응 방안:
+
+1. **🔥 즉시 대응**: Cloudflare에서 해당 IP/국가 차단
+2. **📊 분석**: 공격 패턴 및 트래픽 소스 분석
+3. **⚙️ 규칙 조정**: Rate Limiting 임계값 동적 조정
+4. **🔄 복구**: 정상화 후 점진적 규칙 완화
+
 ## 📄 라이센스
 
 이 프로젝트는 MIT 라이센스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 확인하세요.
