@@ -5,9 +5,12 @@ import '../models/poetry_template.dart';
 import '../services/interfaces/word_service.dart';
 import '../services/interfaces/poetry_service.dart';
 import '../services/interfaces/storage_service.dart';
+import '../services/interfaces/poem_api_service.dart';
 import '../services/implementations/mock_word_service.dart';
 import '../services/implementations/mock_poetry_service.dart';
 import '../services/implementations/local_storage_service.dart';
+import '../services/implementations/http_poem_api_service.dart';
+import '../main.dart';
 
 enum CreationStep {
   wordSelection,
@@ -20,6 +23,7 @@ enum CreationStep {
 final wordServiceProvider = Provider<WordService>((ref) => MockWordService());
 final poetryServiceProvider = Provider<PoetryService>((ref) => MockPoetryService());
 final storageServiceProvider = Provider<StorageService>((ref) => LocalStorageService());
+final poemApiServiceProvider = Provider<PoemApiService>((ref) => HttpPoemApiService());
 
 // 상태 클래스
 class PoetryCreationState {
@@ -75,14 +79,17 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
   final WordService _wordService;
   final PoetryService _poetryService;
   final StorageService _storageService;
+  final PoemApiService _poemApiService;
 
   PoetryCreationNotifier({
     required WordService wordService,
     required PoetryService poetryService,
     required StorageService storageService,
+    required PoemApiService poemApiService,
   })  : _wordService = wordService,
         _poetryService = poetryService,
         _storageService = storageService,
+        _poemApiService = poemApiService,
         super(const PoetryCreationState()) {
     startNewCreation();
   }
@@ -132,22 +139,78 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
     }
   }
 
-  /// 템플릿을 생성합니다
+  /// 시를 생성합니다 (실제 API 호출)
   Future<void> _generateTemplates() async {
     try {
       _setLoading(true);
       final keywords = state.selectedWords.map((w) => w.text).toList();
-      final templates = await _poetryService.generatePoetryTemplates(keywords);
       
-      state = state.copyWith(
-        currentStep: CreationStep.templateSelection,
-        generatedTemplates: templates,
-        isLoading: false,
+      final currentUser = supabase.auth.currentUser;
+      if (currentUser == null) {
+        _setError('로그인이 필요합니다.');
+        _setLoading(false);
+        return;
+      }
+      
+      final request = PoemGenerateRequest(
+        userId: currentUser.id,
+        style: "낭만적인",
+        authorStyle: "김소월",
+        keywords: keywords,
+        length: "4행",
       );
+      
+      final result = await _poemApiService.generatePoem(request);
+      
+      if (result.isSuccess && result.data != null) {
+        final templates = _convertApiResponseToTemplates(result.data!, keywords);
+        state = state.copyWith(
+          currentStep: CreationStep.templateSelection,
+          generatedTemplates: templates,
+          isLoading: false,
+        );
+      } else {
+        _setError('시 생성에 실패했습니다: ${result.message}');
+        _setLoading(false);
+      }
     } catch (e) {
-      _setError('시 템플릿 생성에 실패했습니다: $e');
+      _setError('시 생성 API 호출 오류: $e');
       _setLoading(false);
     }
+  }
+
+  /// API 응답을 PoetryTemplate 리스트로 변환합니다
+  List<PoetryTemplate> _convertApiResponseToTemplates(Map<String, dynamic> apiData, List<String> keywords) {
+    final templates = <PoetryTemplate>[];
+    
+    if (apiData['poems'] is List) {
+      final poems = apiData['poems'] as List;
+      for (int i = 0; i < poems.length; i++) {
+        final poem = poems[i];
+        if (poem is Map<String, dynamic>) {
+          final template = PoetryTemplate(
+            id: 'api_${DateTime.now().millisecondsSinceEpoch}_$i',
+            title: poem['title'] ?? '제목 없음',
+            content: poem['content'] ?? poem['text'] ?? '',
+            keywords: keywords,
+            createdAt: DateTime.now(),
+          );
+          templates.add(template);
+        }
+      }
+    }
+    
+    if (templates.isEmpty) {
+      templates.add(PoetryTemplate(
+        id: 'fallback_${DateTime.now().millisecondsSinceEpoch}',
+        title: '생성된 시',
+        content: apiData['content']?.toString() ?? apiData.toString(),
+        keywords: keywords,
+        createdAt: DateTime.now(),
+      ));
+    }
+    
+    return templates;
   }
 
   /// 템플릿을 선택하고 편집 단계로 이동합니다
@@ -210,10 +273,12 @@ final poetryCreationProvider = StateNotifierProvider<PoetryCreationNotifier, Poe
   final wordService = ref.read(wordServiceProvider);
   final poetryService = ref.read(poetryServiceProvider);
   final storageService = ref.read(storageServiceProvider);
+  final poemApiService = ref.read(poemApiServiceProvider);
   
   return PoetryCreationNotifier(
     wordService: wordService,
     poetryService: poetryService,
     storageService: storageService,
+    poemApiService: poemApiService,
   );
 });
