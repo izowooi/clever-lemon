@@ -26,19 +26,19 @@ void main() async {
 
   runApp(
     const ProviderScope(
-      child: PoetryWriterApp(),
+      child: DailyQuoteApp(),
     ),
   );
 }
 
-class PoetryWriterApp extends StatefulWidget {
-  const PoetryWriterApp({super.key});
+class DailyQuoteApp extends StatefulWidget {
+  const DailyQuoteApp({super.key});
 
   @override
-  State<PoetryWriterApp> createState() => _PoetryWriterAppState();
+  State<DailyQuoteApp> createState() => _DailyQuoteAppState();
 }
 
-class _PoetryWriterAppState extends State<PoetryWriterApp> {
+class _DailyQuoteAppState extends State<DailyQuoteApp> {
   bool _isLoading = true;
   bool _isAuthenticated = false;
 
@@ -82,7 +82,7 @@ class _PoetryWriterAppState extends State<PoetryWriterApp> {
     }
 
     return MaterialApp(
-      title: 'Poetry Writer',
+      title: '오늘의 글귀',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(

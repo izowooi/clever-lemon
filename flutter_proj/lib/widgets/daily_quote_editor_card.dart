@@ -1,48 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/poetry.dart';
+import '../models/daily_quote.dart';
 
-class PoetryEditorCard extends StatefulWidget {
-  final Poetry poetry;
-  final Function(String title, String content) onPoetryChanged;
+class DailyQuoteEditorCard extends StatefulWidget {
+  final DailyQuote dailyQuote;
+  final Function(String title, String content) onDailyQuoteChanged;
   final VoidCallback? onSave;
   final bool isLoading;
 
-  const PoetryEditorCard({
+  const DailyQuoteEditorCard({
     super.key,
-    required this.poetry,
-    required this.onPoetryChanged,
+    required this.dailyQuote,
+    required this.onDailyQuoteChanged,
     this.onSave,
     this.isLoading = false,
   });
 
   @override
-  State<PoetryEditorCard> createState() => _PoetryEditorCardState();
+  State<DailyQuoteEditorCard> createState() => _DailyQuoteEditorCardState();
 }
 
-class _PoetryEditorCardState extends State<PoetryEditorCard> {
+class _DailyQuoteEditorCardState extends State<DailyQuoteEditorCard> {
   late TextEditingController _titleController;
   late TextEditingController _contentController;
-  
+
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.poetry.title);
-    _contentController = TextEditingController(text: widget.poetry.content);
-    
+    _titleController = TextEditingController(text: widget.dailyQuote.title);
+    _contentController = TextEditingController(text: widget.dailyQuote.content);
+
     // 텍스트 변경 리스너 추가
     _titleController.addListener(_onTextChanged);
     _contentController.addListener(_onTextChanged);
   }
 
   void _onTextChanged() {
-    widget.onPoetryChanged(_titleController.text, _contentController.text);
+    widget.onDailyQuoteChanged(_titleController.text, _contentController.text);
   }
 
   Future<void> _copyToClipboard() async {
     final fullText = '${_titleController.text}\n\n${_contentController.text}';
     await Clipboard.setData(ClipboardData(text: fullText));
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -85,7 +85,7 @@ class _PoetryEditorCardState extends State<PoetryEditorCard> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '시 편집하기',
+                  '글귀 편집하기',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.primary,
@@ -94,7 +94,7 @@ class _PoetryEditorCardState extends State<PoetryEditorCard> {
               ],
             ),
           ),
-          
+
           // 편집 영역
           Expanded(
             child: Padding(
@@ -103,7 +103,7 @@ class _PoetryEditorCardState extends State<PoetryEditorCard> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 키워드 표시
-                  if (widget.poetry.keywords.isNotEmpty) ...[
+                  if (widget.dailyQuote.keywords.isNotEmpty) ...[
                     Text(
                       '사용된 키워드:',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -113,7 +113,7 @@ class _PoetryEditorCardState extends State<PoetryEditorCard> {
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
-                      children: widget.poetry.keywords
+                      children: widget.dailyQuote.keywords
                           .map(
                             (keyword) => Chip(
                               label: Text(keyword),
@@ -128,13 +128,13 @@ class _PoetryEditorCardState extends State<PoetryEditorCard> {
                     ),
                     const SizedBox(height: 20),
                   ],
-                  
+
                   // 제목 입력
                   TextField(
                     controller: _titleController,
                     decoration: InputDecoration(
-                      labelText: '시 제목',
-                      hintText: '시의 제목을 입력하세요',
+                      labelText: '글귀 제목',
+                      hintText: '글귀의 제목을 입력하세요',
                       prefixIcon: const Icon(Icons.title),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -143,7 +143,7 @@ class _PoetryEditorCardState extends State<PoetryEditorCard> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // 내용 입력
                   Expanded(
                     child: TextField(
@@ -152,12 +152,12 @@ class _PoetryEditorCardState extends State<PoetryEditorCard> {
                       expands: true,
                       textAlignVertical: TextAlignVertical.top,
                       decoration: InputDecoration(
-                        labelText: '시 내용',
+                        labelText: '글귀 내용',
                         alignLabelWithHint: true,
-                        hintText: '시의 내용을 입력하세요...',
+                        hintText: '글귀의 내용을 입력하세요...',
                         prefixIcon: const Padding(
                           padding: EdgeInsets.only(bottom: 200),
-                          child: Icon(Icons.article),
+                          child: Icon(Icons.format_quote),
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -173,7 +173,7 @@ class _PoetryEditorCardState extends State<PoetryEditorCard> {
               ),
             ),
           ),
-          
+
           // 액션 버튼들
           Container(
             decoration: BoxDecoration(
@@ -199,7 +199,7 @@ class _PoetryEditorCardState extends State<PoetryEditorCard> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  
+
                   // 저장하기 버튼
                   Expanded(
                     flex: 2,

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Poetry Writer is a Flutter-based AI-powered poetry creation app that helps users write poems by selecting words and using AI to generate poetry templates. The app supports Google, Apple, and guest login systems and is currently in development with basic authentication testing functionality.
+오늘의 글귀 (Daily Quote) is a Flutter-based AI-powered quote creation app that helps users create meaningful quotes by selecting words and using AI to generate quote templates. The app supports Google, Apple, and guest login systems and is currently in development with basic authentication testing functionality.
 
 ## Development Commands
 
@@ -36,7 +36,7 @@ The app uses Firebase for remote config and analytics. Firebase configuration fi
 ### Project Structure
 ```
 lib/
-├── models/                 # Domain models (Word, Poetry, PoetryTemplate, UserInfo)
+├── models/                 # Domain models (Word, DailyQuote, DailyQuoteTemplate, UserInfo)
 ├── services/
 │   ├── interfaces/        # Abstract interfaces for all services
 │   └── implementations/   # Concrete implementations (Mock and real)
@@ -52,7 +52,7 @@ All services follow interface-first design:
 - **MessagingAdapter**: Firebase messaging (placeholder)
 - **ApiService**: Backend API communication
 - **StorageService**: Local data persistence
-- **PoetryService** & **WordService**: Core business logic
+- **DailyQuoteService** & **WordService**: Core business logic
 
 ### State Management
 - Uses **flutter_riverpod** with Provider pattern

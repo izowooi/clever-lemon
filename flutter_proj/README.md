@@ -59,6 +59,25 @@ flutter pub get
 flutter run
 ```
 
+## 개발자 명령어
+
+### 버전 확인
+
+- Flutter 버전과 Flutter에 번들된 Dart 버전 확인
+```bash
+flutter --version
+```
+
+- 별도로 설치한 Dart SDK 버전 확인(선택)
+```bash
+dart --version
+```
+
+- 환경 진단(선택, 상세 출력)
+```bash
+flutter doctor -v
+```
+
 ## 향후 계획
 
 - [ ] 실제 AI API 연동

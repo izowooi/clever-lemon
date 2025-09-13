@@ -1,62 +1,62 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../interfaces/storage_service.dart';
-import '../../models/poetry.dart';
+import '../../models/daily_quote.dart';
 
 class LocalStorageService implements StorageService {
-  static const String _poetriesKey = 'saved_poetries';
-  
+  static const String _dailyQuotesKey = 'saved_daily_quotes';
+
   @override
-  Future<void> savePoetry(Poetry poetry) async {
+  Future<void> saveDailyQuote(DailyQuote dailyQuote) async {
     final prefs = await SharedPreferences.getInstance();
-    final poetries = await getAllPoetries();
-    
+    final dailyQuotes = await getAllDailyQuotes();
+
     // 기존에 같은 ID가 있다면 업데이트, 없다면 추가
-    final existingIndex = poetries.indexWhere((p) => p.id == poetry.id);
+    final existingIndex = dailyQuotes.indexWhere((dq) => dq.id == dailyQuote.id);
     if (existingIndex != -1) {
-      poetries[existingIndex] = poetry;
+      dailyQuotes[existingIndex] = dailyQuote;
     } else {
-      poetries.add(poetry);
+      dailyQuotes.add(dailyQuote);
     }
-    
-    final jsonList = poetries.map((p) => p.toJson()).toList();
-    await prefs.setString(_poetriesKey, jsonEncode(jsonList));
+
+    final jsonList = dailyQuotes.map((dq) => dq.toJson()).toList();
+    await prefs.setString(_dailyQuotesKey, jsonEncode(jsonList));
   }
 
   @override
-  Future<List<Poetry>> getAllPoetries() async {
+  Future<List<DailyQuote>> getAllDailyQuotes() async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_poetriesKey);
-    
+    final jsonString = prefs.getString(_dailyQuotesKey);
+
     if (jsonString == null) return [];
-    
+
     final jsonList = jsonDecode(jsonString) as List;
-    return jsonList.map((json) => Poetry.fromJson(json)).toList();
+    return jsonList.map((json) => DailyQuote.fromJson(json)).toList();
   }
 
   @override
-  Future<Poetry?> getPoetryById(String id) async {
-    final poetries = await getAllPoetries();
+  Future<DailyQuote?> getDailyQuoteById(String id) async {
+    final dailyQuotes = await getAllDailyQuotes();
     try {
-      return poetries.firstWhere((poetry) => poetry.id == id);
+      return dailyQuotes.firstWhere((dailyQuote) => dailyQuote.id == id);
     } catch (e) {
       return null;
     }
   }
 
   @override
-  Future<void> deletePoetry(String id) async {
+  Future<void> deleteDailyQuote(String id) async {
     final prefs = await SharedPreferences.getInstance();
-    final poetries = await getAllPoetries();
-    
-    poetries.removeWhere((poetry) => poetry.id == id);
-    
-    final jsonList = poetries.map((p) => p.toJson()).toList();
-    await prefs.setString(_poetriesKey, jsonEncode(jsonList));
+    final dailyQuotes = await getAllDailyQuotes();
+
+    dailyQuotes.removeWhere((dailyQuote) => dailyQuote.id == id);
+
+    final jsonList = dailyQuotes.map((dq) => dq.toJson()).toList();
+    await prefs.setString(_dailyQuotesKey, jsonEncode(jsonList));
   }
 
   @override
-  Future<void> updatePoetry(Poetry poetry) async {
-    await savePoetry(poetry); // savePoetry가 이미 업데이트 로직을 포함하고 있음
+  Future<void> updateDailyQuote(DailyQuote dailyQuote) async {
+    await saveDailyQuote(dailyQuote); // saveDailyQuote가 이미 업데이트 로직을 포함하고 있음
   }
 }

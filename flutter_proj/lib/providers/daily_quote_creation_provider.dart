@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/word.dart';
-import '../models/poetry.dart';
-import '../models/poetry_template.dart';
+import '../models/daily_quote.dart';
+import '../models/daily_quote_template.dart';
 import '../services/interfaces/word_service.dart';
-import '../services/interfaces/poetry_service.dart';
+import '../services/interfaces/daily_quote_service.dart';
 import '../services/interfaces/storage_service.dart';
 import '../services/interfaces/poem_api_service.dart';
 import '../services/implementations/mock_word_service.dart';
-import '../services/implementations/mock_poetry_service.dart';
+import '../services/implementations/mock_daily_quote_service.dart';
 import '../services/implementations/local_storage_service.dart';
 import '../services/implementations/http_poem_api_service.dart';
 import '../main.dart';
@@ -21,53 +21,53 @@ enum CreationStep {
 
 // 서비스 프로바이더들
 final wordServiceProvider = Provider<WordService>((ref) => MockWordService());
-final poetryServiceProvider = Provider<PoetryService>((ref) => MockPoetryService());
+final dailyQuoteServiceProvider = Provider<DailyQuoteService>((ref) => MockDailyQuoteService());
 final storageServiceProvider = Provider<StorageService>((ref) => LocalStorageService());
 final poemApiServiceProvider = Provider<PoemApiService>((ref) => HttpPoemApiService());
 
 // 상태 클래스
-class PoetryCreationState {
+class DailyQuoteCreationState {
   final CreationStep currentStep;
   final int sequentialStep;
   final List<Word> currentWords;
   final List<Word> selectedWords;
-  final List<PoetryTemplate> generatedTemplates;
-  final PoetryTemplate? selectedTemplate;
-  final Poetry? editingPoetry;
+  final List<DailyQuoteTemplate> generatedTemplates;
+  final DailyQuoteTemplate? selectedTemplate;
+  final DailyQuote? editingDailyQuote;
   final bool isLoading;
   final String? errorMessage;
 
-  const PoetryCreationState({
+  const DailyQuoteCreationState({
     this.currentStep = CreationStep.wordSelection,
     this.sequentialStep = 0,
     this.currentWords = const [],
     this.selectedWords = const [],
     this.generatedTemplates = const [],
     this.selectedTemplate,
-    this.editingPoetry,
+    this.editingDailyQuote,
     this.isLoading = false,
     this.errorMessage,
   });
 
-  PoetryCreationState copyWith({
+  DailyQuoteCreationState copyWith({
     CreationStep? currentStep,
     int? sequentialStep,
     List<Word>? currentWords,
     List<Word>? selectedWords,
-    List<PoetryTemplate>? generatedTemplates,
-    PoetryTemplate? selectedTemplate,
-    Poetry? editingPoetry,
+    List<DailyQuoteTemplate>? generatedTemplates,
+    DailyQuoteTemplate? selectedTemplate,
+    DailyQuote? editingDailyQuote,
     bool? isLoading,
     String? errorMessage,
   }) {
-    return PoetryCreationState(
+    return DailyQuoteCreationState(
       currentStep: currentStep ?? this.currentStep,
       sequentialStep: sequentialStep ?? this.sequentialStep,
       currentWords: currentWords ?? this.currentWords,
       selectedWords: selectedWords ?? this.selectedWords,
       generatedTemplates: generatedTemplates ?? this.generatedTemplates,
       selectedTemplate: selectedTemplate ?? this.selectedTemplate,
-      editingPoetry: editingPoetry ?? this.editingPoetry,
+      editingDailyQuote: editingDailyQuote ?? this.editingDailyQuote,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage ?? this.errorMessage,
     );
@@ -75,22 +75,22 @@ class PoetryCreationState {
 }
 
 // StateNotifier 클래스
-class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
+class DailyQuoteCreationNotifier extends StateNotifier<DailyQuoteCreationState> {
   final WordService _wordService;
-  final PoetryService _poetryService;
+  final DailyQuoteService _dailyQuoteService;
   final StorageService _storageService;
   final PoemApiService _poemApiService;
 
-  PoetryCreationNotifier({
+  DailyQuoteCreationNotifier({
     required WordService wordService,
-    required PoetryService poetryService,
+    required DailyQuoteService dailyQuoteService,
     required StorageService storageService,
     required PoemApiService poemApiService,
   })  : _wordService = wordService,
-        _poetryService = poetryService,
+        _dailyQuoteService = dailyQuoteService,
         _storageService = storageService,
         _poemApiService = poemApiService,
-        super(const PoetryCreationState()) {
+        super(const DailyQuoteCreationState()) {
     startNewCreation();
   }
 
@@ -104,7 +104,7 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
 
   /// 새로운 창작 과정을 시작합니다
   Future<void> startNewCreation() async {
-    state = const PoetryCreationState();
+    state = const DailyQuoteCreationState();
     await loadRandomWords();
   }
 
@@ -170,18 +170,18 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
           isLoading: false,
         );
       } else {
-        _setError('시 생성에 실패했습니다: ${result.message}');
+        _setError('글귀 생성에 실패했습니다: ${result.message}');
         _setLoading(false);
       }
     } catch (e) {
-      _setError('시 생성 API 호출 오류: $e');
+      _setError('글귀 생성 API 호출 오류: $e');
       _setLoading(false);
     }
   }
 
-  /// API 응답을 PoetryTemplate 리스트로 변환합니다
-  List<PoetryTemplate> _convertApiResponseToTemplates(Map<String, dynamic> apiData, List<String> keywords) {
-    final templates = <PoetryTemplate>[];
+  /// API 응답을 DailyQuoteTemplate 리스트로 변환합니다
+  List<DailyQuoteTemplate> _convertApiResponseToTemplates(Map<String, dynamic> apiData, List<String> keywords) {
+    final templates = <DailyQuoteTemplate>[];
     
     if (apiData['poems'] is List) {
       final poems = apiData['poems'] as List;
@@ -190,7 +190,7 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
         if (poem is String) {
           // 문자열에서 제목과 내용을 파싱
           final parsedPoem = _parsePoemString(poem);
-          final template = PoetryTemplate(
+          final template = DailyQuoteTemplate(
             id: 'api_${DateTime.now().millisecondsSinceEpoch}_$i',
             title: parsedPoem['title'] ?? '시 ${i + 1}',
             content: parsedPoem['content'] ?? poem,
@@ -199,7 +199,7 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
           );
           templates.add(template);
         } else if (poem is Map<String, dynamic>) {
-          final template = PoetryTemplate(
+          final template = DailyQuoteTemplate(
             id: 'api_${DateTime.now().millisecondsSinceEpoch}_$i',
             title: poem['title'] ?? '제목 없음',
             content: poem['content'] ?? poem['text'] ?? '',
@@ -212,7 +212,7 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
     }
     
     if (templates.isEmpty) {
-      templates.add(PoetryTemplate(
+      templates.add(DailyQuoteTemplate(
         id: 'fallback_${DateTime.now().millisecondsSinceEpoch}',
         title: '생성된 시',
         content: apiData['content']?.toString() ?? apiData.toString(),
@@ -252,9 +252,9 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
   }
 
   /// 템플릿을 선택하고 편집 단계로 이동합니다
-  void selectTemplate(PoetryTemplate template) {
-    // 편집용 Poetry 객체 생성
-    final editingPoetry = Poetry(
+  void selectTemplate(DailyQuoteTemplate template) {
+    // 편집용 DailyQuote 객체 생성
+    final editingDailyQuote = DailyQuote(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: template.title,
       content: template.content,
@@ -263,39 +263,39 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
       isFromTemplate: true,
       templateId: template.id,
     );
-    
+
     state = state.copyWith(
       selectedTemplate: template,
       currentStep: CreationStep.editing,
-      editingPoetry: editingPoetry,
+      editingDailyQuote: editingDailyQuote,
     );
   }
 
-  /// 시의 내용을 업데이트합니다
-  void updatePoetryContent(String title, String content) {
-    if (state.editingPoetry != null) {
-      final updatedPoetry = state.editingPoetry!.copyWith(
+  /// 글귀의 내용을 업데이트합니다
+  void updateDailyQuoteContent(String title, String content) {
+    if (state.editingDailyQuote != null) {
+      final updatedDailyQuote = state.editingDailyQuote!.copyWith(
         title: title,
         content: content,
         modifiedAt: DateTime.now(),
       );
-      state = state.copyWith(editingPoetry: updatedPoetry);
+      state = state.copyWith(editingDailyQuote: updatedDailyQuote);
     }
   }
 
-  /// 시를 저장합니다
-  Future<void> savePoetry() async {
-    if (state.editingPoetry == null) return;
-    
+  /// 글귀를 저장합니다
+  Future<void> saveDailyQuote() async {
+    if (state.editingDailyQuote == null) return;
+
     try {
       _setLoading(true);
-      await _storageService.savePoetry(state.editingPoetry!);
+      await _storageService.saveDailyQuote(state.editingDailyQuote!);
       state = state.copyWith(
         currentStep: CreationStep.completed,
         isLoading: false,
       );
     } catch (e) {
-      _setError('시 저장에 실패했습니다: $e');
+      _setError('글귀 저장에 실패했습니다: $e');
       _setLoading(false);
     }
   }
@@ -307,15 +307,15 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
 }
 
 // StateNotifierProvider 정의
-final poetryCreationProvider = StateNotifierProvider<PoetryCreationNotifier, PoetryCreationState>((ref) {
+final dailyQuoteCreationProvider = StateNotifierProvider<DailyQuoteCreationNotifier, DailyQuoteCreationState>((ref) {
   final wordService = ref.read(wordServiceProvider);
-  final poetryService = ref.read(poetryServiceProvider);
+  final dailyQuoteService = ref.read(dailyQuoteServiceProvider);
   final storageService = ref.read(storageServiceProvider);
   final poemApiService = ref.read(poemApiServiceProvider);
-  
-  return PoetryCreationNotifier(
+
+  return DailyQuoteCreationNotifier(
     wordService: wordService,
-    poetryService: poetryService,
+    dailyQuoteService: dailyQuoteService,
     storageService: storageService,
     poemApiService: poemApiService,
   );

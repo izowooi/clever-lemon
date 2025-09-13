@@ -127,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             // 앱 제목
             const Text(
-              'Poetry Writer',
+              '오늘의 글귀',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
@@ -136,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              '시를 작성하고 공유해보세요',
+              '마음을 울리는 글귀를 만들어보세요',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
