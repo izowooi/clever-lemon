@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/poetry_creation_provider.dart';
 import '../widgets/word_selection_card.dart';
-import '../widgets/poetry_template_card.dart';
-import '../widgets/poetry_editor_card.dart';
 
 class SequentialCreationScreen extends ConsumerWidget {
   const SequentialCreationScreen({super.key});
@@ -123,10 +121,6 @@ class SequentialCreationScreen extends ConsumerWidget {
         return _buildWordSelectionStep(context, state, notifier);
       case CreationStep.templateSelection:
         return _buildTemplateSelectionStep(context, state, notifier);
-      case CreationStep.editing:
-        return _buildEditingStep(context, state, notifier);
-      case CreationStep.completed:
-        return _buildCompletedStep(context, state, notifier);
     }
   }
 
@@ -185,56 +179,17 @@ class SequentialCreationScreen extends ConsumerWidget {
       );
     }
 
-    return Column(
-      children: [
-        // 헤더
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          child: Text(
-            '마음에 드는 시를 선택하세요',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-        
-        // 시 목록 (스크롤 가능)
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: state.generatedTemplates.length,
-            itemBuilder: (context, index) {
-              final template = state.generatedTemplates[index];
-              return PoetryTemplateCard(
-                template: template,
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEditingStep(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
-    if (state.editingPoetry == null) {
-      return const Center(child: Text('편집할 시가 없습니다.'));
+    // 시가 생성되고 저장된 후 완료 화면 표시
+    if (state.generatedTemplates.isNotEmpty) {
+      return _buildCompletedView(context, state, notifier);
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: PoetryEditorCard(
-        poetry: state.editingPoetry!,
-        onPoetryChanged: notifier.updatePoetryContent,
-        onSave: notifier.savePoetry,
-        isLoading: state.isLoading,
-      ),
+    return const Center(
+      child: Text('시를 생성하는 중입니다...'),
     );
   }
 
-  Widget _buildCompletedStep(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
+  Widget _buildCompletedView(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -264,8 +219,16 @@ class SequentialCreationScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              '시가 성공적으로 저장되었습니다',
+              '${state.generatedTemplates.length}개의 시가 성공적으로 저장되었습니다',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '작품 목록에서 확인해보세요!',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
@@ -290,4 +253,5 @@ class SequentialCreationScreen extends ConsumerWidget {
       ),
     );
   }
+
 }

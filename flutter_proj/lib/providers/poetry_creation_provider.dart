@@ -3,27 +3,21 @@ import '../models/word.dart';
 import '../models/poetry.dart';
 import '../models/poetry_template.dart';
 import '../services/interfaces/word_service.dart';
-import '../services/interfaces/poetry_service.dart';
-import '../services/interfaces/storage_service.dart';
 import '../services/interfaces/poem_api_service.dart';
 import '../services/implementations/mock_word_service.dart';
-import '../services/implementations/mock_poetry_service.dart';
-import '../services/implementations/local_storage_service.dart';
 import '../services/implementations/http_poem_api_service.dart';
 import '../main.dart';
 import 'poem_settings_provider.dart';
+import 'database_provider.dart';
+import 'poetry_list_provider.dart';
 
 enum CreationStep {
   wordSelection,
   templateSelection,
-  editing,
-  completed,
 }
 
 // 서비스 프로바이더들
 final wordServiceProvider = Provider<WordService>((ref) => MockWordService());
-final poetryServiceProvider = Provider<PoetryService>((ref) => MockPoetryService());
-final storageServiceProvider = Provider<StorageService>((ref) => LocalStorageService());
 final poemApiServiceProvider = Provider<PoemApiService>((ref) => HttpPoemApiService());
 
 // 상태 클래스
@@ -33,8 +27,6 @@ class PoetryCreationState {
   final List<Word> currentWords;
   final List<Word> selectedWords;
   final List<PoetryTemplate> generatedTemplates;
-  final PoetryTemplate? selectedTemplate;
-  final Poetry? editingPoetry;
   final bool isLoading;
   final String? errorMessage;
 
@@ -44,8 +36,6 @@ class PoetryCreationState {
     this.currentWords = const [],
     this.selectedWords = const [],
     this.generatedTemplates = const [],
-    this.selectedTemplate,
-    this.editingPoetry,
     this.isLoading = false,
     this.errorMessage,
   });
@@ -56,8 +46,6 @@ class PoetryCreationState {
     List<Word>? currentWords,
     List<Word>? selectedWords,
     List<PoetryTemplate>? generatedTemplates,
-    PoetryTemplate? selectedTemplate,
-    Poetry? editingPoetry,
     bool? isLoading,
     String? errorMessage,
   }) {
@@ -67,8 +55,6 @@ class PoetryCreationState {
       currentWords: currentWords ?? this.currentWords,
       selectedWords: selectedWords ?? this.selectedWords,
       generatedTemplates: generatedTemplates ?? this.generatedTemplates,
-      selectedTemplate: selectedTemplate ?? this.selectedTemplate,
-      editingPoetry: editingPoetry ?? this.editingPoetry,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage ?? this.errorMessage,
     );
@@ -78,20 +64,14 @@ class PoetryCreationState {
 // StateNotifier 클래스
 class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
   final WordService _wordService;
-  final PoetryService _poetryService;
-  final StorageService _storageService;
   final PoemApiService _poemApiService;
   final Ref _ref;
 
   PoetryCreationNotifier({
     required WordService wordService,
-    required PoetryService poetryService,
-    required StorageService storageService,
     required PoemApiService poemApiService,
     required Ref ref,
   })  : _wordService = wordService,
-        _poetryService = poetryService,
-        _storageService = storageService,
         _poemApiService = poemApiService,
         _ref = ref,
         super(const PoetryCreationState()) {
@@ -170,6 +150,10 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
       
       if (result.isSuccess && result.data != null) {
         final templates = _convertApiResponseToTemplates(result.data!, keywords);
+        
+        // 모든 시를 바로 저장
+        await _saveAllPoetries(templates, keywords);
+        
         state = state.copyWith(
           currentStep: CreationStep.templateSelection,
           generatedTemplates: templates,
@@ -182,6 +166,33 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
     } catch (e) {
       _setError('시 생성 API 호출 오류: $e');
       _setLoading(false);
+    }
+  }
+
+  /// 모든 시를 데이터베이스에 저장합니다
+  Future<void> _saveAllPoetries(List<PoetryTemplate> templates, List<String> keywords) async {
+    try {
+      final poetryService = _ref.read(driftPoetryServiceProvider);
+      
+      for (final template in templates) {
+        final poetry = Poetry(
+          id: DateTime.now().millisecondsSinceEpoch.toString() + '_${templates.indexOf(template)}',
+          title: template.title,
+          content: template.content,
+          keywords: keywords,
+          createdAt: DateTime.now(),
+          isFromTemplate: true,
+          templateId: template.id,
+        );
+        
+        await poetryService.savePoetry(poetry);
+      }
+      
+      // 시 목록 새로고침
+      _ref.read(poetryListProvider.notifier).refreshAfterSave();
+    } catch (e) {
+      // 저장 실패해도 UI는 계속 진행
+      print('시 저장 중 오류 발생: $e');
     }
   }
 
@@ -257,54 +268,6 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
     };
   }
 
-  /// 템플릿을 선택하고 편집 단계로 이동합니다
-  void selectTemplate(PoetryTemplate template) {
-    // 편집용 Poetry 객체 생성
-    final editingPoetry = Poetry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: template.title,
-      content: template.content,
-      keywords: template.keywords,
-      createdAt: DateTime.now(),
-      isFromTemplate: true,
-      templateId: template.id,
-    );
-    
-    state = state.copyWith(
-      selectedTemplate: template,
-      currentStep: CreationStep.editing,
-      editingPoetry: editingPoetry,
-    );
-  }
-
-  /// 시의 내용을 업데이트합니다
-  void updatePoetryContent(String title, String content) {
-    if (state.editingPoetry != null) {
-      final updatedPoetry = state.editingPoetry!.copyWith(
-        title: title,
-        content: content,
-        modifiedAt: DateTime.now(),
-      );
-      state = state.copyWith(editingPoetry: updatedPoetry);
-    }
-  }
-
-  /// 시를 저장합니다
-  Future<void> savePoetry() async {
-    if (state.editingPoetry == null) return;
-    
-    try {
-      _setLoading(true);
-      await _storageService.savePoetry(state.editingPoetry!);
-      state = state.copyWith(
-        currentStep: CreationStep.completed,
-        isLoading: false,
-      );
-    } catch (e) {
-      _setError('시 저장에 실패했습니다: $e');
-      _setLoading(false);
-    }
-  }
 
   /// 에러를 클리어합니다
   void clearError() {
@@ -315,14 +278,10 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
 // StateNotifierProvider 정의
 final poetryCreationProvider = StateNotifierProvider<PoetryCreationNotifier, PoetryCreationState>((ref) {
   final wordService = ref.read(wordServiceProvider);
-  final poetryService = ref.read(poetryServiceProvider);
-  final storageService = ref.read(storageServiceProvider);
   final poemApiService = ref.read(poemApiServiceProvider);
 
   return PoetryCreationNotifier(
     wordService: wordService,
-    poetryService: poetryService,
-    storageService: storageService,
     poemApiService: poemApiService,
     ref: ref,
   );
