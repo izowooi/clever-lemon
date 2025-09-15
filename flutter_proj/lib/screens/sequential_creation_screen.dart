@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/poetry_creation_provider.dart';
 import '../widgets/word_selection_card.dart';
+import '../widgets/poetry_template_card.dart';
 
 class SequentialCreationScreen extends ConsumerWidget {
   const SequentialCreationScreen({super.key});
@@ -190,11 +191,31 @@ class SequentialCreationScreen extends ConsumerWidget {
   }
 
   Widget _buildCompletedView(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
-    return Center(
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: state.generatedTemplates.length + 1, // 시 4개 + 축하 카드 1개
+      itemBuilder: (context, index) {
+        // 마지막 인덱스는 축하 카드
+        if (index == state.generatedTemplates.length) {
+          return _buildCongratulationsCard(context, state, notifier);
+        }
+        
+        // 시 템플릿 카드들
+        final template = state.generatedTemplates[index];
+        return PoetryTemplateCard(
+          template: template,
+        );
+      },
+    );
+  }
+
+  Widget _buildCongratulationsCard(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(20),
@@ -227,7 +248,7 @@ class SequentialCreationScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '작품 목록에서 확인해보세요!',
+              '위에서 방금 생성된 시들을 확인해보세요!\n작품 목록에서도 언제든 다시 볼 수 있습니다.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
