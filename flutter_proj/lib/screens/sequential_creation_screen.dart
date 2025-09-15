@@ -160,6 +160,7 @@ class SequentialCreationScreen extends ConsumerWidget {
               isLoading: state.isLoading,
               title: title,
               onRefresh: state.currentWords.isEmpty ? null : notifier.loadRandomWords,
+              isGeneratingPoetry: state.selectedWords.length == 3 && state.isLoading,
             ),
           ),
         ],

@@ -7,6 +7,7 @@ class WordSelectionCard extends StatelessWidget {
   final bool isLoading;
   final String title;
   final VoidCallback? onRefresh;
+  final bool isGeneratingPoetry;
 
   const WordSelectionCard({
     super.key,
@@ -15,6 +16,7 @@ class WordSelectionCard extends StatelessWidget {
     this.isLoading = false,
     this.title = '단어를 선택하세요',
     this.onRefresh,
+    this.isGeneratingPoetry = false,
   });
 
   @override
@@ -30,7 +32,7 @@ class WordSelectionCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    title,
+                    isGeneratingPoetry ? "시를 생성하는 중..." : title,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).colorScheme.primary,
@@ -51,18 +53,29 @@ class WordSelectionCard extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: isLoading
+              child: isGeneratingPoetry
                   ? const Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           CircularProgressIndicator(),
                           SizedBox(height: 16),
-                          Text('새로운 단어를 불러오는 중...'),
+                          Text('시를 생성하는 중...'),
                         ],
                       ),
                     )
-                  : SingleChildScrollView(
+                  : isLoading
+                      ? const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text('단어를 불러오는 중...'),
+                            ],
+                          ),
+                        )
+                      : SingleChildScrollView(
                       child: Wrap(
                         spacing: 12,
                         runSpacing: 12,
