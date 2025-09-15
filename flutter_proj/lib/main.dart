@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'config/api_config.dart';
-import 'services/implementations/firebase_remote_config_adapter.dart';
+import 'services/remote_config_service.dart';
 
 // Supabase 설정
 const supabaseUrl = 'https://tnihnfuwhhtvbkmhwiut.supabase.co';
@@ -14,11 +14,8 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // Supabase 클라이언트 인스턴스 (전역 사용)
 final supabase = Supabase.instance.client;
 
-// Firebase Remote Config 글로벌 인스턴스
-FirebaseRemoteConfigAdapter? _globalRemoteConfig;
-
-/// 전역 Firebase Remote Config 인스턴스에 접근하는 getter
-FirebaseRemoteConfigAdapter? get globalRemoteConfig => _globalRemoteConfig;
+/// 전역 Firebase Remote Config 서비스에 접근하는 getter
+RemoteConfigService get remoteConfigService => RemoteConfigService.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,8 +47,8 @@ Future<void> _initializeRemoteConfig() async {
   try {
     print('[Main] Firebase Remote Config 초기화 시작');
 
-    _globalRemoteConfig = FirebaseRemoteConfigAdapter();
-    await _globalRemoteConfig!.initialize();
+    final remoteConfig = RemoteConfigService.instance;
+    await remoteConfig.initialize();
 
     // 기본값 설정
     final Map<String, Object> defaultValues = {
@@ -65,14 +62,14 @@ Future<void> _initializeRemoteConfig() async {
       }''',
     };
 
-    await _globalRemoteConfig!.setDefaults(defaultValues);
+    await remoteConfig.setDefaults(defaultValues);
 
     // Remote Config 값 fetch 및 activate
-    final result = await _globalRemoteConfig!.fetchAndActivate();
-    if (result.isSuccess) {
+    final success = await remoteConfig.fetchAndActivate();
+    if (success) {
       print('[Main] Firebase Remote Config 초기화 완료');
     } else {
-      print('[Main] Firebase Remote Config fetch 실패: ${result.message}');
+      print('[Main] Firebase Remote Config fetch 실패');
     }
   } catch (e) {
     print('[Main] Firebase Remote Config 초기화 실패: $e');

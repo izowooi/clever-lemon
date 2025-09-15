@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../interfaces/poem_settings_service.dart';
-import '../implementations/firebase_remote_config_adapter.dart';
+import '../remote_config_service.dart';
 import '../../models/poem_settings.dart';
 
 class FirebasePoemSettingsService implements PoemSettingsService {
   static const String _settingsKey = 'poem_settings';
-  final FirebaseRemoteConfigAdapter _remoteConfigAdapter;
+  final RemoteConfigService _remoteConfigService;
 
-  FirebasePoemSettingsService(this._remoteConfigAdapter);
+  FirebasePoemSettingsService(this._remoteConfigService);
 
   @override
   Future<PoemSettings> getCurrentSettings() async {
@@ -38,7 +38,7 @@ class FirebasePoemSettingsService implements PoemSettingsService {
   Future<PoemSettingsConfig> getSettingsConfig() async {
     try {
       // Firebase Remote Config에서 설정을 가져온다
-      final configData = _remoteConfigAdapter.getPoemSettingsConfig();
+      final configData = _remoteConfigService.getPoemSettingsConfig();
 
       if (configData != null) {
         // JSON 형식을 PoemSettingsConfig로 변환

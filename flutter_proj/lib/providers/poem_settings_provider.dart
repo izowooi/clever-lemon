@@ -2,21 +2,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/poem_settings.dart';
 import '../services/interfaces/poem_settings_service.dart';
 import '../services/implementations/firebase_poem_settings_service.dart';
-import '../services/implementations/firebase_remote_config_adapter.dart';
+import '../services/remote_config_service.dart';
 import '../main.dart';
 
-final firebaseRemoteConfigAdapterProvider = Provider<FirebaseRemoteConfigAdapter?>((ref) {
-  return globalRemoteConfig;
+final remoteConfigServiceProvider = Provider<RemoteConfigService>((ref) {
+  return remoteConfigService;
 });
 
 final poemSettingsServiceProvider = Provider<PoemSettingsService>((ref) {
-  final remoteConfigAdapter = ref.read(firebaseRemoteConfigAdapterProvider);
-  if (remoteConfigAdapter != null) {
-    return FirebasePoemSettingsService(remoteConfigAdapter);
-  } else {
-    // Remote Config가 초기화되지 않은 경우 기본 서비스 사용
-    return FirebasePoemSettingsService(FirebaseRemoteConfigAdapter());
-  }
+  final remoteConfig = ref.read(remoteConfigServiceProvider);
+  return FirebasePoemSettingsService(remoteConfig);
 });
 
 final poemSettingsProvider = StateNotifierProvider<PoemSettingsNotifier, PoemSettings>((ref) {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../services/implementations/firebase_remote_config_adapter.dart';
+import '../services/remote_config_service.dart';
 
-final _remoteConfigProvider = Provider<FirebaseRemoteConfigAdapter>((ref) => FirebaseRemoteConfigAdapter());
+final _remoteConfigProvider = Provider<RemoteConfigService>((ref) => RemoteConfigService.instance);
 
 class RemoteConfigTestHarness extends ConsumerStatefulWidget {
   const RemoteConfigTestHarness({super.key});
@@ -29,10 +29,10 @@ class _RemoteConfigTestHarnessState extends ConsumerState<RemoteConfigTestHarnes
     _log = 'Remote Config 초기화 중...';
     print('[RemoteConfig] 초기화 시작');
     setState(() {});
-    
-    final adapter = ref.read(_remoteConfigProvider);
+
+    final service = ref.read(_remoteConfigProvider);
     try {
-      await adapter.initialize();
+      await service.initialize();
       _log = 'Remote Config 초기화 완료';
       print('[RemoteConfig] 초기화 완료');
     } catch (e) {
@@ -50,9 +50,9 @@ class _RemoteConfigTestHarnessState extends ConsumerState<RemoteConfigTestHarnes
     print('[RemoteConfig] 기본값 설정 시작');
     setState(() {});
     
-    final adapter = ref.read(_remoteConfigProvider);
+    final service = ref.read(_remoteConfigProvider);
     try {
-      await adapter.setDefaults(_defaultValues);
+      await service.setDefaults(_defaultValues);
       _log = '기본값 설정 완료\n' + _defaultValues.entries.map((e) => '${e.key}: ${e.value}').join('\n');
       print('[RemoteConfig] 기본값 설정 완료');
     } catch (e) {
@@ -70,21 +70,19 @@ class _RemoteConfigTestHarnessState extends ConsumerState<RemoteConfigTestHarnes
     print('[RemoteConfig] Fetch + Activate 시작');
     setState(() {});
     
-    final adapter = ref.read(_remoteConfigProvider);
-    final result = await adapter.fetchAndActivate();
-    _log = (result.isSuccess ? '성공: ' : '실패: ') + result.message;
-    
-    if (result.extra != null) {
-      _log += '\n\n상세 정보:\n';
-      result.extra!.forEach((key, value) {
-        _log += '$key: $value\n';
-      });
+    final service = ref.read(_remoteConfigProvider);
+    final success = await service.fetchAndActivate();
+    _log = success ? '성공: Fetch + Activate 완료' : '실패: Fetch + Activate 실패';
+
+    if (success) {
+      _log += '\n\n현재 값들:\n';
+      _log += 'review_versioncode_aos: ${service.getReviewVersionAos()}\n';
+      _log += 'review_versioncode_ios: ${service.getReviewVersionIos()}\n';
+      _log += 'api_base_url: ${service.getApiBaseUrl()}\n';
+      _log += 'poem_settings_config: ${service.getPoemSettingsConfig()}\n';
     }
-    
-    print('[RemoteConfig] Fetch + Activate 결과: ${result.isSuccess ? "성공" : "실패"} - ${result.message}');
-    if (result.extra != null) {
-      print('[RemoteConfig] 추가 정보: ${result.extra}');
-    }
+
+    print('[RemoteConfig] Fetch + Activate 결과: ${success ? "성공" : "실패"}');
     
     _working = false;
     setState(() {});
@@ -96,12 +94,12 @@ class _RemoteConfigTestHarnessState extends ConsumerState<RemoteConfigTestHarnes
     print('[RemoteConfig] 현재 값 조회 시작');
     setState(() {});
     
-    final adapter = ref.read(_remoteConfigProvider);
+    final service = ref.read(_remoteConfigProvider);
     
     try {
-      final reviewVersionAos = adapter.getInt('review_versioncode_aos');
-      final reviewVersionIos = adapter.getInt('review_versioncode_ios');
-      final apiBaseUrl = adapter.getString('api_base_url');
+      final reviewVersionAos = service.getInt('review_versioncode_aos');
+      final reviewVersionIos = service.getInt('review_versioncode_ios');
+      final apiBaseUrl = service.getString('api_base_url');
       
       _log = '현재 Remote Config 값들:\n\n';
       _log += 'review_versioncode_aos: $reviewVersionAos\n';
@@ -127,14 +125,13 @@ class _RemoteConfigTestHarnessState extends ConsumerState<RemoteConfigTestHarnes
     print('[RemoteConfig] Config 정보 조회 시작');
     setState(() {});
     
-    final adapter = ref.read(_remoteConfigProvider);
-    final result = await adapter.getConfigInfo();
+    final service = ref.read(_remoteConfigProvider);
+    final configInfo = service.getConfigInfo();
     
-    _log = (result.isSuccess ? '성공: ' : '실패: ') + result.message;
-    
-    if (result.extra != null) {
+    if (configInfo != null) {
+      _log = '성공: Config 정보 조회 완료';
       _log += '\n\nConfig 정보:\n';
-      result.extra!.forEach((key, value) {
+      configInfo.forEach((key, value) {
         if (value is Map) {
           _log += '$key:\n';
           value.forEach((k, v) => _log += '  $k: $v\n');
@@ -142,9 +139,11 @@ class _RemoteConfigTestHarnessState extends ConsumerState<RemoteConfigTestHarnes
           _log += '$key: $value\n';
         }
       });
+      print('[RemoteConfig] Config 정보 결과: 성공');
+    } else {
+      _log = '실패: Config 정보 조회 실패';
+      print('[RemoteConfig] Config 정보 결과: 실패');
     }
-    
-    print('[RemoteConfig] Config 정보 결과: ${result.isSuccess ? "성공" : "실패"} - ${result.message}');
     
     _working = false;
     setState(() {});
