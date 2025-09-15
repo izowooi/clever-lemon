@@ -1,18 +1,18 @@
-import '../../models/daily_quote.dart';
+import '../../models/poetry.dart';
 
 abstract class StorageService {
-  /// 글귀를 저장합니다.
-  Future<void> saveDailyQuote(DailyQuote dailyQuote);
+  /// 시를 저장합니다.
+  Future<void> savePoetry(Poetry poetry);
 
-  /// 저장된 모든 글귀를 가져옵니다.
-  Future<List<DailyQuote>> getAllDailyQuotes();
+  /// 저장된 모든 시를 가져옵니다.
+  Future<List<Poetry>> getAllPoetries();
 
-  /// 특정 ID의 글귀를 가져옵니다.
-  Future<DailyQuote?> getDailyQuoteById(String id);
+  /// 특정 ID의 시를 가져옵니다.
+  Future<Poetry?> getPoetryById(String id);
 
-  /// 글귀를 삭제합니다.
-  Future<void> deleteDailyQuote(String id);
+  /// 시를 삭제합니다.
+  Future<void> deletePoetry(String id);
 
-  /// 글귀를 업데이트합니다.
-  Future<void> updateDailyQuote(DailyQuote dailyQuote);
+  /// 시를 업데이트합니다.
+  Future<void> updatePoetry(Poetry poetry);
 }

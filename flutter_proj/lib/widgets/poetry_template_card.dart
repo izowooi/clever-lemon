@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/daily_quote_template.dart';
+import '../models/poetry_template.dart';
 
-class DailyQuoteTemplateCard extends StatelessWidget {
-  final DailyQuoteTemplate template;
+class PoetryTemplateCard extends StatelessWidget {
+  final PoetryTemplate template;
   final VoidCallback? onCopy;
   final VoidCallback? onEdit;
   final VoidCallback? onSave;
 
-  const DailyQuoteTemplateCard({
+  const PoetryTemplateCard({
     super.key,
     required this.template,
     this.onCopy,
@@ -19,7 +19,7 @@ class DailyQuoteTemplateCard extends StatelessWidget {
   Future<void> _copyToClipboard(BuildContext context) async {
     final fullText = '${template.title}\n\n${template.content}';
     await Clipboard.setData(ClipboardData(text: fullText));
-
+    
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -28,7 +28,7 @@ class DailyQuoteTemplateCard extends StatelessWidget {
         ),
       );
     }
-
+    
     onCopy?.call();
   }
 
@@ -40,7 +40,7 @@ class DailyQuoteTemplateCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 글귀 내용
+          // 시 내용
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
@@ -55,7 +55,7 @@ class DailyQuoteTemplateCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-
+                
                 // 본문
                 Container(
                   width: double.infinity,
@@ -78,7 +78,7 @@ class DailyQuoteTemplateCard extends StatelessWidget {
               ],
             ),
           ),
-
+          
           // 액션 버튼들
           Container(
             decoration: BoxDecoration(
@@ -104,7 +104,7 @@ class DailyQuoteTemplateCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-
+                  
                   // 편집하기 버튼
                   Expanded(
                     child: OutlinedButton.icon(
@@ -117,7 +117,7 @@ class DailyQuoteTemplateCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-
+                  
                   // 저장하기 버튼
                   Expanded(
                     child: ElevatedButton.icon(

@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/daily_quote_creation_provider.dart';
+import '../providers/poetry_creation_provider.dart';
 import '../widgets/word_selection_card.dart';
-import '../widgets/daily_quote_template_card.dart';
-import '../widgets/daily_quote_editor_card.dart';
+import '../widgets/poetry_template_card.dart';
+import '../widgets/poetry_editor_card.dart';
 
 class SequentialCreationScreen extends ConsumerWidget {
   const SequentialCreationScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dailyQuoteCreationProvider);
-    final notifier = ref.read(dailyQuoteCreationProvider.notifier);
+    final state = ref.watch(poetryCreationProvider);
+    final notifier = ref.read(poetryCreationProvider.notifier);
 
     return _buildMainContent(context, state, notifier);
   }
 
-  Widget _buildProgressIndicator(BuildContext context, DailyQuoteCreationState state) {
+  Widget _buildProgressIndicator(BuildContext context, PoetryCreationState state) {
     final int currentStep = state.selectedWords.length;
     final String stepText = '단어 선택 (${state.selectedWords.length}/3)';
 
@@ -82,7 +82,7 @@ class SequentialCreationScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorMessage(BuildContext context, DailyQuoteCreationState state, DailyQuoteCreationNotifier notifier) {
+  Widget _buildErrorMessage(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
@@ -117,7 +117,7 @@ class SequentialCreationScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMainContent(BuildContext context, DailyQuoteCreationState state, DailyQuoteCreationNotifier notifier) {
+  Widget _buildMainContent(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
     switch (state.currentStep) {
       case CreationStep.wordSelection:
         return _buildWordSelectionStep(context, state, notifier);
@@ -130,7 +130,7 @@ class SequentialCreationScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildWordSelectionStep(BuildContext context, DailyQuoteCreationState state, DailyQuoteCreationNotifier notifier) {
+  Widget _buildWordSelectionStep(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
     String title;
     if (state.selectedWords.isEmpty) {
       title = '첫 번째 단어를 선택하세요';
@@ -167,7 +167,7 @@ class SequentialCreationScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTemplateSelectionStep(BuildContext context, DailyQuoteCreationState state, DailyQuoteCreationNotifier notifier) {
+  Widget _buildTemplateSelectionStep(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
     if (state.isLoading) {
       return const Center(
         child: Column(
@@ -207,14 +207,14 @@ class SequentialCreationScreen extends ConsumerWidget {
             itemCount: state.generatedTemplates.length,
             itemBuilder: (context, index) {
               final template = state.generatedTemplates[index];
-              return DailyQuoteTemplateCard(
+              return PoetryTemplateCard(
                 template: template,
                 onEdit: () => notifier.selectTemplate(template),
                 onSave: () async {
                   notifier.selectTemplate(template);
                   // 잠깐 기다린 후 자동 저장
                   await Future.delayed(const Duration(milliseconds: 100));
-                  notifier.saveDailyQuote();
+                  notifier.savePoetry();
                 },
               );
             },
@@ -224,23 +224,23 @@ class SequentialCreationScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEditingStep(BuildContext context, DailyQuoteCreationState state, DailyQuoteCreationNotifier notifier) {
-    if (state.editingDailyQuote == null) {
-      return const Center(child: Text('편집할 글귀가 없습니다.'));
+  Widget _buildEditingStep(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
+    if (state.editingPoetry == null) {
+      return const Center(child: Text('편집할 시가 없습니다.'));
     }
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: DailyQuoteEditorCard(
-        dailyQuote: state.editingDailyQuote!,
-        onDailyQuoteChanged: notifier.updateDailyQuoteContent,
-        onSave: notifier.saveDailyQuote,
+      child: PoetryEditorCard(
+        poetry: state.editingPoetry!,
+        onPoetryChanged: notifier.updatePoetryContent,
+        onSave: notifier.savePoetry,
         isLoading: state.isLoading,
       ),
     );
   }
 
-  Widget _buildCompletedStep(BuildContext context, DailyQuoteCreationState state, DailyQuoteCreationNotifier notifier) {
+  Widget _buildCompletedStep(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),

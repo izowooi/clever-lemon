@@ -1,4 +1,4 @@
-class DailyQuote {
+class Poetry {
   final String id;
   final String title;
   final String content;
@@ -8,7 +8,7 @@ class DailyQuote {
   final bool isFromTemplate;
   final String? templateId;
 
-  const DailyQuote({
+  const Poetry({
     required this.id,
     required this.title,
     required this.content,
@@ -19,7 +19,7 @@ class DailyQuote {
     this.templateId,
   });
 
-  DailyQuote copyWith({
+  Poetry copyWith({
     String? id,
     String? title,
     String? content,
@@ -29,7 +29,7 @@ class DailyQuote {
     bool? isFromTemplate,
     String? templateId,
   }) {
-    return DailyQuote(
+    return Poetry(
       id: id ?? this.id,
       title: title ?? this.title,
       content: content ?? this.content,
@@ -41,8 +41,8 @@ class DailyQuote {
     );
   }
 
-  factory DailyQuote.fromJson(Map<String, dynamic> json) {
-    return DailyQuote(
+  factory Poetry.fromJson(Map<String, dynamic> json) {
+    return Poetry(
       id: json['id'],
       title: json['title'],
       content: json['content'],
@@ -71,7 +71,7 @@ class DailyQuote {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is DailyQuote && runtimeType == other.runtimeType && id == other.id;
+      other is Poetry && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;

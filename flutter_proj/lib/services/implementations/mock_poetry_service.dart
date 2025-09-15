@@ -1,17 +1,17 @@
 import 'dart:math';
-import '../interfaces/daily_quote_service.dart';
-import '../../models/daily_quote_template.dart';
+import '../interfaces/poetry_service.dart';
+import '../../models/poetry_template.dart';
 
-class MockDailyQuoteService implements DailyQuoteService {
+class MockPoetryService implements PoetryService {
   final Random _random = Random();
-
+  
   static const List<String> _templateFormats = [
     '''%s이 흘러가고
 %s 속에서
 %s을 찾는다
 
 시간은 멈춰있고
-내 마음만
+내 마음만 
 천천히 흘러간다''',
 
     '''한 송이 %s처럼
@@ -41,37 +41,37 @@ class MockDailyQuoteService implements DailyQuoteService {
   ];
 
   @override
-  Future<List<DailyQuoteTemplate>> generateDailyQuoteTemplates(List<String> keywords) async {
+  Future<List<PoetryTemplate>> generatePoetryTemplates(List<String> keywords) async {
     // AI 서버 통신 시뮬레이션
     await Future.delayed(const Duration(seconds: 2));
-
-    final templates = <DailyQuoteTemplate>[];
-
+    
+    final templates = <PoetryTemplate>[];
+    
     for (int i = 0; i < 4; i++) {
       final format = _templateFormats[_random.nextInt(_templateFormats.length)];
       final shuffledKeywords = List<String>.from(keywords)..shuffle(_random);
-
+      
       // 키워드를 템플릿에 삽입
       String content = format;
       for (int j = 0; j < shuffledKeywords.length && j < 3; j++) {
         content = content.replaceFirst('%s', shuffledKeywords[j]);
       }
-
-      templates.add(DailyQuoteTemplate(
+      
+      templates.add(PoetryTemplate(
         id: 'template_${DateTime.now().millisecondsSinceEpoch}_$i',
-        title: '${shuffledKeywords.first}에 대한 글귀',
+        title: '${shuffledKeywords.first}에 대한 시',
         content: content,
         keywords: keywords,
         createdAt: DateTime.now(),
       ));
     }
-
+    
     return templates;
   }
 
   @override
-  Future<DailyQuoteTemplate> generateDailyQuoteFromKeywords(List<String> keywords) async {
-    final templates = await generateDailyQuoteTemplates(keywords);
+  Future<PoetryTemplate> generatePoetryFromKeywords(List<String> keywords) async {
+    final templates = await generatePoetryTemplates(keywords);
     return templates.first;
   }
 }

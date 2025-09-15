@@ -1,11 +1,11 @@
-class DailyQuoteTemplate {
+class PoetryTemplate {
   final String id;
   final String title;
   final String content;
   final List<String> keywords;
   final DateTime createdAt;
 
-  const DailyQuoteTemplate({
+  const PoetryTemplate({
     required this.id,
     required this.title,
     required this.content,
@@ -13,8 +13,8 @@ class DailyQuoteTemplate {
     required this.createdAt,
   });
 
-  factory DailyQuoteTemplate.fromJson(Map<String, dynamic> json) {
-    return DailyQuoteTemplate(
+  factory PoetryTemplate.fromJson(Map<String, dynamic> json) {
+    return PoetryTemplate(
       id: json['id'],
       title: json['title'],
       content: json['content'],
@@ -36,7 +36,7 @@ class DailyQuoteTemplate {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is DailyQuoteTemplate &&
+      other is PoetryTemplate &&
           runtimeType == other.runtimeType &&
           id == other.id;
 

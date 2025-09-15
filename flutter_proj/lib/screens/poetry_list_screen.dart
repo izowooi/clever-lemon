@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class DailyQuoteListScreen extends StatelessWidget {
-  const DailyQuoteListScreen({super.key});
+class PoetryListScreen extends StatelessWidget {
+  const PoetryListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -10,13 +10,13 @@ class DailyQuoteListScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.format_quote,
+            Icons.library_books,
             size: 80,
             color: Colors.grey,
           ),
           SizedBox(height: 16),
           Text(
-            '글귀 모음',
+            '작품 목록',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,

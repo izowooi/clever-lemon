@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_proj/screens/auth_test_screen.dart';
 import 'sequential_creation_screen.dart';
-import 'daily_quote_list_screen.dart';
+import 'poetry_list_screen.dart';
 import 'settings_screen.dart';
 import 'dev_test_screen.dart';
 
@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          '오늘의 글귀',
+          'Poetry Writer',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         controller: _tabController,
         children: const [
           SequentialCreationScreen(),
-          DailyQuoteListScreen(),
+          PoetryListScreen(),
           SettingsScreen(),
           DevTestScreen(),
           //AuthTestScreen(),
@@ -68,11 +68,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.create),
-            label: '글귀 창작',
+            label: '시 창작',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.format_quote),
-            label: '글귀 모음',
+            icon: Icon(Icons.library_books),
+            label: '작품 목록',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
