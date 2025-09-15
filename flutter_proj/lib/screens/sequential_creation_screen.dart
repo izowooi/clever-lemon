@@ -209,13 +209,6 @@ class SequentialCreationScreen extends ConsumerWidget {
               final template = state.generatedTemplates[index];
               return PoetryTemplateCard(
                 template: template,
-                onEdit: () => notifier.selectTemplate(template),
-                onSave: () async {
-                  notifier.selectTemplate(template);
-                  // 잠깐 기다린 후 자동 저장
-                  await Future.delayed(const Duration(milliseconds: 100));
-                  notifier.savePoetry();
-                },
               );
             },
           ),
