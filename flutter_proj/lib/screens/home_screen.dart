@@ -3,6 +3,7 @@ import 'package:flutter_proj/screens/auth_test_screen.dart';
 import 'sequential_creation_screen.dart';
 import 'poetry_list_screen.dart';
 import 'settings_screen.dart';
+import 'poem_settings_screen.dart';
 import 'dev_test_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(() {
       setState(() {
         _currentIndex = _tabController.index;
@@ -52,9 +53,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: const [
           SequentialCreationScreen(),
           PoetryListScreen(),
+          PoemSettingsScreen(),
           SettingsScreen(),
           DevTestScreen(),
-          //AuthTestScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -73,6 +74,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           BottomNavigationBarItem(
             icon: Icon(Icons.library_books),
             label: '작품 목록',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.tune),
+            label: '시 설정',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),

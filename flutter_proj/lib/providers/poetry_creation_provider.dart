@@ -11,6 +11,7 @@ import '../services/implementations/mock_poetry_service.dart';
 import '../services/implementations/local_storage_service.dart';
 import '../services/implementations/http_poem_api_service.dart';
 import '../main.dart';
+import 'poem_settings_provider.dart';
 
 enum CreationStep {
   wordSelection,
@@ -80,16 +81,19 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
   final PoetryService _poetryService;
   final StorageService _storageService;
   final PoemApiService _poemApiService;
+  final Ref _ref;
 
   PoetryCreationNotifier({
     required WordService wordService,
     required PoetryService poetryService,
     required StorageService storageService,
     required PoemApiService poemApiService,
+    required Ref ref,
   })  : _wordService = wordService,
         _poetryService = poetryService,
         _storageService = storageService,
         _poemApiService = poemApiService,
+        _ref = ref,
         super(const PoetryCreationState()) {
     startNewCreation();
   }
@@ -152,12 +156,14 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
         return;
       }
       
+      final poemSettings = _ref.read(poemSettingsProvider);
+
       final request = PoemGenerateRequest(
         userId: currentUser.id,
-        style: "낭만적인",
-        authorStyle: "김소월",
+        style: poemSettings.style,
+        authorStyle: poemSettings.authorStyle,
         keywords: keywords,
-        length: "4행",
+        length: poemSettings.length.toString() + "행",
       );
       
       final result = await _poemApiService.generatePoem(request);
@@ -312,11 +318,12 @@ final poetryCreationProvider = StateNotifierProvider<PoetryCreationNotifier, Poe
   final poetryService = ref.read(poetryServiceProvider);
   final storageService = ref.read(storageServiceProvider);
   final poemApiService = ref.read(poemApiServiceProvider);
-  
+
   return PoetryCreationNotifier(
     wordService: wordService,
     poetryService: poetryService,
     storageService: storageService,
     poemApiService: poemApiService,
+    ref: ref,
   );
 });
