@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'config/api_config.dart';
+import 'services/implementations/firebase_remote_config_adapter.dart';
 
 // Supabase 설정
 const supabaseUrl = 'https://tnihnfuwhhtvbkmhwiut.supabase.co';
@@ -12,11 +14,20 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // Supabase 클라이언트 인스턴스 (전역 사용)
 final supabase = Supabase.instance.client;
 
+// Firebase Remote Config 글로벌 인스턴스
+FirebaseRemoteConfigAdapter? _globalRemoteConfig;
+
+/// 전역 Firebase Remote Config 인스턴스에 접근하는 getter
+FirebaseRemoteConfigAdapter? get globalRemoteConfig => _globalRemoteConfig;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // API 환경 정보 출력
   ApiConfig.printCurrentEnvironment();
+
+  // Firebase 초기화
+  await Firebase.initializeApp();
 
   // Supabase 초기화
   await Supabase.initialize(
@@ -24,11 +35,49 @@ void main() async {
     anonKey: supabaseAnonKey,
   );
 
+  // Firebase Remote Config 초기화 및 기본값 설정
+  await _initializeRemoteConfig();
+
   runApp(
     const ProviderScope(
       child: PoetryWriterApp(),
     ),
   );
+}
+
+/// Firebase Remote Config를 초기화하고 기본값을 설정합니다
+Future<void> _initializeRemoteConfig() async {
+  try {
+    print('[Main] Firebase Remote Config 초기화 시작');
+
+    _globalRemoteConfig = FirebaseRemoteConfigAdapter();
+    await _globalRemoteConfig!.initialize();
+
+    // 기본값 설정
+    final Map<String, Object> defaultValues = {
+      'review_versioncode_aos': 1,
+      'review_versioncode_ios': 1,
+      'api_base_url': 'https://clever-lemon.zowoo.uk',
+      'poem_settings_config': '''{
+        "styles": ["낭만적인", "우울한", "철학적인", "초현실적인", "서정적인"],
+        "authorStyles": ["김소월", "윤동주", "서정주", "김춘수", "정지용"],
+        "lengths": ["4행", "8행", "12행", "16행", "20행"]
+      }''',
+    };
+
+    await _globalRemoteConfig!.setDefaults(defaultValues);
+
+    // Remote Config 값 fetch 및 activate
+    final result = await _globalRemoteConfig!.fetchAndActivate();
+    if (result.isSuccess) {
+      print('[Main] Firebase Remote Config 초기화 완료');
+    } else {
+      print('[Main] Firebase Remote Config fetch 실패: ${result.message}');
+    }
+  } catch (e) {
+    print('[Main] Firebase Remote Config 초기화 실패: $e');
+    // 초기화 실패해도 앱은 계속 실행
+  }
 }
 
 class PoetryWriterApp extends StatefulWidget {

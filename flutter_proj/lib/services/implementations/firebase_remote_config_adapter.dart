@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -71,14 +72,16 @@ class FirebaseRemoteConfigAdapter implements RemoteConfigAdapter {
       print('[RemoteConfigAdapter] fetchAndActivate 완료 - 업데이트됨: $updated');
       
       // 현재 값들 로그 출력
-      final reviewVersionAos = _remoteConfig!.getInt('review_versioncode_aos');
-      final reviewVersionIos = _remoteConfig!.getInt('review_versioncode_ios');
-      final apiBaseUrl = _remoteConfig!.getString('api_base_url');
-      
+      final reviewVersionAos = getReviewVersionAos();
+      final reviewVersionIos = getReviewVersionIos();
+      final apiBaseUrl = getApiBaseUrl();
+      final poemSettingsConfig = getPoemSettingsConfig();
+
       print('[RemoteConfigAdapter] 현재 값들:');
       print('  - review_versioncode_aos: $reviewVersionAos');
       print('  - review_versioncode_ios: $reviewVersionIos');
       print('  - api_base_url: $apiBaseUrl');
+      print('  - poem_settings_config: $poemSettingsConfig');
       
       return AuthResult.success(
         'RemoteConfig: fetch + activate 완료 (업데이트: $updated)',
@@ -87,6 +90,7 @@ class FirebaseRemoteConfigAdapter implements RemoteConfigAdapter {
           'review_versioncode_aos': reviewVersionAos,
           'review_versioncode_ios': reviewVersionIos,
           'api_base_url': apiBaseUrl,
+          'poem_settings_config': poemSettingsConfig,
           'last_fetch_time': _remoteConfig!.lastFetchTime.toIso8601String(),
           'last_fetch_status': _remoteConfig!.lastFetchStatus.toString(),
         },
@@ -139,10 +143,51 @@ class FirebaseRemoteConfigAdapter implements RemoteConfigAdapter {
       print('[RemoteConfigAdapter] getDouble($key) - 초기화되지 않음, fallback 반환: $fallback');
       return fallback;
     }
-    
+
     final value = _remoteConfig!.getDouble(key);
     print('[RemoteConfigAdapter] getDouble($key) = $value');
     return value;
+  }
+
+  /// JSON 형태의 Remote Config 값을 파싱하여 Map으로 반환
+  Map<String, dynamic>? getJson(String key, {Map<String, dynamic>? fallback}) {
+    if (!_initialized || _remoteConfig == null) {
+      print('[RemoteConfigAdapter] getJson($key) - 초기화되지 않음, fallback 반환');
+      return fallback;
+    }
+
+    try {
+      final jsonString = _remoteConfig!.getString(key);
+      if (jsonString.isEmpty) {
+        print('[RemoteConfigAdapter] getJson($key) - 빈 문자열, fallback 반환');
+        return fallback;
+      }
+
+      final jsonData = jsonDecode(jsonString) as Map<String, dynamic>;
+      print('[RemoteConfigAdapter] getJson($key) - JSON 파싱 성공');
+      return jsonData;
+    } catch (e) {
+      print('[RemoteConfigAdapter] getJson($key) - JSON 파싱 실패: $e, fallback 반환');
+      return fallback;
+    }
+  }
+
+  /// 특정 Remote Config 매개변수 값을 가져오는 헬퍼 메서드들
+  String getApiBaseUrl() {
+    return getString('api_base_url', fallback: '');
+  }
+
+  int getReviewVersionAos() {
+    return getInt('review_versioncode_aos', fallback: 0);
+  }
+
+  int getReviewVersionIos() {
+    return getInt('review_versioncode_ios', fallback: 0);
+  }
+
+  /// 시 설정 JSON 구성을 가져오는 메서드
+  Map<String, dynamic>? getPoemSettingsConfig() {
+    return getJson('poem_settings_config');
   }
 
   /// Remote Config 상태 정보를 가져오는 추가 메서드

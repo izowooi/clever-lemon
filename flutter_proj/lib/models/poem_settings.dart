@@ -86,18 +86,10 @@ class PoemSettingsConfig {
   static const PoemSettingsConfig defaultConfig = PoemSettingsConfig(
     styles: [
       '낭만적인',
-      '우울한',
-      '철학적인',
-      '초현실적인',
-      '서정적인',
     ],
     authorStyles: [
       '김소월',
-      '윤동주',
-      '서정주',
-      '김춘수',
-      '정지용',
     ],
-    lengths: [4, 8, 12, 16, 20],
+    lengths: [4],
   );
 }
