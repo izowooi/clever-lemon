@@ -36,7 +36,7 @@ class _PoetryListScreenState extends ConsumerState<PoetryListScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: '시 제목이나 키워드로 검색...',
+                hintText: '키워드로 검색...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
