@@ -43,7 +43,7 @@ class WordSelectionCard extends StatelessWidget {
                         ),
                   ),
                 ),
-                if (onRefresh != null)
+                if (onRefresh != null && !isGeneratingPoetry)
                   IconButton.filledTonal(
                     onPressed: onRefresh,
                     icon: const Icon(Icons.refresh),
