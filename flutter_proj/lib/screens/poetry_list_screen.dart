@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/poetry_list_provider.dart';
 import '../models/poetry.dart';
@@ -189,9 +190,21 @@ class _PoetryListScreenState extends ConsumerState<PoetryListScreen> {
                     onSelected: (value) {
                       if (value == 'delete') {
                         _confirmDelete(poetry);
+                      } else if (value == 'share') {
+                        _sharePoetry(poetry);
                       }
                     },
                     itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'share',
+                        child: Row(
+                          children: [
+                            Icon(Icons.share),
+                            SizedBox(width: 8),
+                            Text('공유하기'),
+                          ],
+                        ),
+                      ),
                       const PopupMenuItem(
                         value: 'delete',
                         child: Row(
@@ -356,6 +369,20 @@ class _PoetryListScreenState extends ConsumerState<PoetryListScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _sharePoetry(Poetry poetry) async {
+    final fullText = '${poetry.title}\n\n${poetry.content}';
+    await Clipboard.setData(ClipboardData(text: fullText));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('클립보드에 복사되었습니다 (공유 기능)'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   String _formatDate(DateTime date) {
