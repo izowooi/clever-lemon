@@ -188,7 +188,7 @@ class PoemSettingsScreen extends ConsumerWidget {
       children: items.map((length) {
         final isSelected = length == value;
         return FilterChip(
-          label: Text(length.toString() + '행'),
+          label: Text(_getLengthDisplayText(length)),
           selected: isSelected,
           onSelected: (selected) {
             if (selected) {
@@ -225,7 +225,7 @@ class PoemSettingsScreen extends ConsumerWidget {
                 const SizedBox(width: 8),
                 _buildSettingChip(context, '작가', settings.authorStyle),
                 const SizedBox(width: 8),
-                _buildSettingChip(context, '길이', settings.length.toString() + '행'),
+                _buildSettingChip(context, '길이', _getLengthDisplayText(settings.length)),
               ],
             ),
           ],
@@ -243,5 +243,22 @@ class PoemSettingsScreen extends ConsumerWidget {
         fontSize: 12,
       ),
     );
+  }
+
+  String _getLengthDisplayText(int length) {
+    switch (length) {
+      case 4:
+        return '아주 짧게';
+      case 8:
+        return '짧게';
+      case 12:
+        return '보통';
+      case 16:
+        return '길게';
+      case 20:
+        return '아주 길게';
+      default:
+        return '$length행';
+    }
   }
 }
