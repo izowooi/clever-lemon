@@ -17,7 +17,9 @@ enum CreationStep {
 }
 
 // 서비스 프로바이더들
-final wordServiceProvider = Provider<WordService>((ref) => MockWordService());
+final wordServiceProvider = Provider<WordService>((ref) {
+  return MockWordService();
+});
 final poemApiServiceProvider = Provider<PoemApiService>((ref) => HttpPoemApiService());
 
 // 상태 클래스

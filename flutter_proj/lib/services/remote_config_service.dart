@@ -177,6 +177,11 @@ class RemoteConfigService {
     return getJson('poem_settings_config');
   }
 
+  /// 시 단어 목록 JSON 구성을 가져오는 메서드
+  Map<String, dynamic>? getPoemWorlds() {
+    return getJson('poem_words');
+  }
+
   /// Remote Config 상태 정보를 가져오는 메서드
   Map<String, dynamic>? getConfigInfo() {
     if (!_initialized || _remoteConfig == null) {
