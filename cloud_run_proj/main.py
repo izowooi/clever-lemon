@@ -162,31 +162,34 @@ async def register_user(request: UserRegistrationRequest):
         
         # 기존 사용자 확인
         existing_user = supabase.table("users_credits").select("*").eq("user_id", user_id).execute()
-        
+
         if existing_user.data:
             user_data = existing_user.data[0]
+            total_credits = user_data.get("free_credits", 0) + user_data.get("paid_credits", 0)
             return UserRegistrationResponse(
                 success=True,
                 user_id=user_data["user_id"],
-                credits=user_data["credits"],
+                credits=total_credits,
                 message="이미 등록된 사용자입니다",
                 created_at=user_data.get("updated_at")
             )
-        
+
         # 새 사용자 등록
         initial_credits = 100  # 기본 크레딧
         result = supabase.table("users_credits").insert({
             "user_id": user_id,
-            "credits": initial_credits,
+            "free_credits": initial_credits,
+            "paid_credits": 0,
             "updated_at": datetime.now().isoformat()
         }).execute()
-        
+
         if result.data:
             user_data = result.data[0]
+            total_credits = user_data.get("free_credits", 0) + user_data.get("paid_credits", 0)
             return UserRegistrationResponse(
                 success=True,
                 user_id=user_data["user_id"],
-                credits=user_data["credits"],
+                credits=total_credits,
                 message="회원가입이 성공적으로 완료되었습니다",
                 created_at=user_data.get("updated_at")
             )
@@ -246,26 +249,29 @@ def validate_user_credit(user_id: str) -> int:
             status_code=500,
             detail="Supabase 클라이언트가 설정되지 않았습니다"
         )
-    
+
     try:
         user_data = supabase.table("users_credits").select("*").eq("user_id", user_id).execute()
-        
+
         if not user_data.data:
             raise HTTPException(
                 status_code=404,
                 detail="등록되지 않은 사용자입니다"
             )
-        
-        credits = user_data.data[0]["credits"]
-        
-        if credits <= 0:
+
+        user_info = user_data.data[0]
+        free_credits = user_info.get("free_credits", 0)
+        paid_credits = user_info.get("paid_credits", 0)
+        total_credits = free_credits + paid_credits
+
+        if total_credits <= 0:
             raise HTTPException(
                 status_code=400,
                 detail="크레딧이 부족합니다. 크레딧을 충전해주세요"
             )
-        
-        return credits
-        
+
+        return total_credits
+
     except HTTPException:
         raise
     except Exception as e:
@@ -276,31 +282,49 @@ def validate_user_credit(user_id: str) -> int:
 
 # 크레딧 차감 함수
 def deduct_user_credit(user_id: str) -> int:
-    """사용자의 크레딧을 1 차감하고 남은 크레딧을 반환합니다"""
+    """사용자의 크레딧을 1 차감하고 남은 크레딧을 반환합니다 (free_credits 우선 소모)"""
     if not supabase:
         raise HTTPException(
             status_code=500,
             detail="Supabase 클라이언트가 설정되지 않았습니다"
         )
-    
+
     try:
-        # 현재 크레딧 조회 후 1 차감
-        current_credits_result = supabase.table("users_credits").select("credits").eq("user_id", user_id).execute()
-        current_credits = current_credits_result.data[0]["credits"]
-        
+        # 현재 크레딧 조회
+        current_credits_result = supabase.table("users_credits").select("*").eq("user_id", user_id).execute()
+        user_info = current_credits_result.data[0]
+        free_credits = user_info.get("free_credits", 0)
+        paid_credits = user_info.get("paid_credits", 0)
+
+        # free_credits 우선 차감
+        if free_credits > 0:
+            new_free_credits = free_credits - 1
+            new_paid_credits = paid_credits
+        elif paid_credits > 0:
+            new_free_credits = free_credits
+            new_paid_credits = paid_credits - 1
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="크레딧이 부족합니다"
+            )
+
+        # 크레딧 업데이트
         result = supabase.table("users_credits").update({
-            "credits": current_credits - 1,
+            "free_credits": new_free_credits,
+            "paid_credits": new_paid_credits,
             "updated_at": datetime.now().isoformat()
         }).eq("user_id", user_id).execute()
-        
+
         if result.data:
-            return result.data[0]["credits"]
+            updated_user = result.data[0]
+            return updated_user.get("free_credits", 0) + updated_user.get("paid_credits", 0)
         else:
             raise HTTPException(
                 status_code=500,
                 detail="크레딧 차감에 실패했습니다"
             )
-            
+
     except HTTPException:
         raise
     except Exception as e:
