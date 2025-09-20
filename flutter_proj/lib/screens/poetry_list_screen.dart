@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import '../providers/poetry_list_provider.dart';
 import '../models/poetry.dart';
 
@@ -373,15 +374,21 @@ class _PoetryListScreenState extends ConsumerState<PoetryListScreen> {
 
   Future<void> _sharePoetry(Poetry poetry) async {
     final fullText = '${poetry.title}\n\n${poetry.content}';
-    await Clipboard.setData(ClipboardData(text: fullText));
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('클립보드에 복사되었습니다 (공유 기능)'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+    try {
+      await SharePlus.instance.share(ShareParams(
+        text: fullText,
+        subject: poetry.title,
+      ));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('공유에 실패했습니다: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 

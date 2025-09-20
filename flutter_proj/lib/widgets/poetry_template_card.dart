@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/poetry_template.dart';
 
 class PoetryTemplateCard extends StatelessWidget {
@@ -30,15 +31,21 @@ class PoetryTemplateCard extends StatelessWidget {
 
   Future<void> _sharePoetry(BuildContext context) async {
     final fullText = '${template.title}\n\n${template.content}';
-    await Clipboard.setData(ClipboardData(text: fullText));
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('클립보드에 복사되었습니다 (공유 기능)'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+    try {
+      await SharePlus.instance.share(ShareParams(
+        text: fullText,
+        subject: template.title,
+      ));
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('공유에 실패했습니다: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
