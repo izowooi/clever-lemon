@@ -16,6 +16,21 @@ class RegisterRequest {
 }
 
 @immutable
+class WithdrawRequest {
+  final String accessToken;
+
+  const WithdrawRequest({
+    required this.accessToken,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'access_token': accessToken,
+    };
+  }
+}
+
+@immutable
 class ApiResult<T> {
   final bool isSuccess;
   final String message;
@@ -49,4 +64,5 @@ class ApiResult<T> {
 
 abstract class AuthApiService {
   Future<ApiResult<Map<String, dynamic>>> register(RegisterRequest request);
+  Future<ApiResult<Map<String, dynamic>>> withdraw(WithdrawRequest request);
 }

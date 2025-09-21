@@ -41,4 +41,40 @@ class HttpAuthApiService implements AuthApiService {
       return ApiResult.failure('네트워크 오류: ${error.toString()}');
     }
   }
+
+  @override
+  Future<ApiResult<Map<String, dynamic>>> withdraw(WithdrawRequest request) async {
+    try {
+      final url = Uri.parse(ApiConfig.authWithdrawUrl);
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(request.toJson()),
+      );
+
+      final responseBody = response.body.isNotEmpty
+          ? jsonDecode(response.body) as Map<String, dynamic>
+          : <String, dynamic>{};
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResult.success(
+          '탈퇴 처리가 완료되었습니다. 2주 유예 기간 후 계정이 삭제됩니다.',
+          data: responseBody,
+          statusCode: response.statusCode,
+        );
+      } else {
+        final errorMessage = responseBody['message'] as String? ??
+                           responseBody['error'] as String? ??
+                           'Unknown error occurred';
+        return ApiResult.failure(
+          '탈퇴 처리 실패: $errorMessage',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (error) {
+      return ApiResult.failure('네트워크 오류: ${error.toString()}');
+    }
+  }
 }

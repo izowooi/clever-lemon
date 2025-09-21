@@ -30,6 +30,7 @@ class ApiConfig {
   
   // API 엔드포인트들
   static String get authRegisterUrl => '$baseUrl/auth/register';
+  static String get authWithdrawUrl => '$baseUrl/auth/withdraw';
   static String get poemGenerateUrl => '$baseUrl/poems/generate';
   static String get paymentApproveUrl => '$baseUrl/payments/approve';
 }
