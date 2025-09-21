@@ -104,6 +104,15 @@ class UserRegistrationResponse(BaseModel):
     message: str
     created_at: Optional[str] = None
 
+class UserWithdrawalRequest(BaseModel):
+    access_token: str
+
+class UserWithdrawalResponse(BaseModel):
+    success: bool
+    user_id: str
+    message: str
+    deleted_at: Optional[str] = None
+
 # 더미 데이터베이스 (실제 구현에서는 데이터베이스 사용)
 fake_user_currency = {
     "user123": {"coins": 1000, "gems": 50, "premium_points": 25},
@@ -205,6 +214,70 @@ async def register_user(request: UserRegistrationRequest):
         raise HTTPException(
             status_code=500,
             detail=f"회원가입 처리 중 오류가 발생했습니다: {str(e)}"
+        )
+
+
+# 회원탈퇴 - access_token으로 검증 후 탈퇴 처리
+@app.post("/auth/withdraw", response_model=UserWithdrawalResponse)
+async def withdraw_user(request: UserWithdrawalRequest):
+    """access_token을 검증하고 회원탈퇴 처리"""
+    if not supabase:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase 클라이언트가 설정되지 않았습니다"
+        )
+
+    try:
+        # JWT 토큰 검증
+        claims = verify_and_decode_supabase_jwt(request.access_token)
+        user_id = claims["sub"]
+
+        # 사용자 존재 확인
+        existing_user = supabase.table("users_credits").select("*").eq("user_id", user_id).execute()
+
+        if not existing_user.data:
+            raise HTTPException(
+                status_code=404,
+                detail="등록되지 않은 사용자입니다"
+            )
+
+        user_data = existing_user.data[0]
+
+        # 이미 탈퇴한 사용자인지 확인
+        if user_data.get("deleted_at"):
+            return UserWithdrawalResponse(
+                success=True,
+                user_id=user_id,
+                message="이미 탈퇴 처리된 사용자입니다",
+                deleted_at=user_data.get("deleted_at")
+            )
+
+        # 탈퇴 처리 - deleted_at에 현재 시각 기록
+        deleted_at = datetime.now().isoformat()
+        result = supabase.table("users_credits").update({
+            "deleted_at": deleted_at,
+            "updated_at": deleted_at
+        }).eq("user_id", user_id).execute()
+
+        if result.data:
+            return UserWithdrawalResponse(
+                success=True,
+                user_id=user_id,
+                message="회원탈퇴가 성공적으로 처리되었습니다",
+                deleted_at=deleted_at
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="회원탈퇴 처리에 실패했습니다"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"회원탈퇴 처리 중 오류가 발생했습니다: {str(e)}"
         )
 
 
