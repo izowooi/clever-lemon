@@ -219,12 +219,12 @@ class PoemSettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 _buildSettingChip(context, '스타일', settings.style),
-                const SizedBox(width: 8),
                 _buildSettingChip(context, '작가', settings.authorStyle),
-                const SizedBox(width: 8),
                 _buildSettingChip(context, '길이', _getLengthDisplayText(settings.length)),
               ],
             ),
