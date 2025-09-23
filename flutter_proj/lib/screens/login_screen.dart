@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/implementations/supabase_google_auth_adapter.dart';
 import '../services/implementations/supabase_apple_auth_adapter.dart';
+import '../main.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,6 +23,47 @@ class _LoginScreenState extends State<LoginScreen> {
     _appleAuthAdapter.initialize();
   }
 
+  Future<void> _cancelWithdrawal() async {
+    try {
+      final currentUser = supabase.auth.currentUser;
+      if (currentUser == null) {
+        print('❌ 탈퇴 취소 실패: 로그인된 사용자가 없습니다.');
+        return;
+      }
+
+      print('🔄 탈퇴 취소 처리 시작 - User ID: ${currentUser.id}');
+
+      // Supabase에서 직접 deleted_at을 null로 업데이트
+      await supabase
+          .from('users_credits')
+          .update({'deleted_at': null})
+          .eq('user_id', currentUser.id);
+
+      print('✅ 탈퇴 취소 완료');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎉 탈퇴가 취소되었습니다! 계속 서비스를 이용하실 수 있습니다.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (error) {
+      print('❌ 탈퇴 취소 오류: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('탈퇴 취소 중 오류가 발생했습니다: ${error.toString()}'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleGoogleSignIn() async {
     setState(() {
       _isLoading = true;
@@ -30,15 +73,23 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await _googleAuthAdapter.signIn();
 
       if (result.isSuccess) {
-        if (mounted) {
+        // 탈퇴 유예기간 유저인지 확인
+        final showWithdrawalNotice = result.extra?['show_withdrawal_notice'] == true;
+
+        if (showWithdrawalNotice) {
+          // 탈퇴 취소 처리
+          await _cancelWithdrawal();
+        } else {
+          // 일반 로그인 성공 메시지
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('로그인 성공!'),
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.of(context).pushReplacementNamed('/home');
         }
+
+        Navigator.of(context).pushReplacementNamed('/home');
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -77,12 +128,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (result.isSuccess) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('로그인 성공!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          // 탈퇴 유예기간 유저인지 확인
+          final showWithdrawalNotice = result.extra?['show_withdrawal_notice'] == true;
+
+          if (showWithdrawalNotice) {
+            // 탈퇴 취소 처리
+            await _cancelWithdrawal();
+          } else {
+            // 일반 로그인 성공 메시지
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('로그인 성공!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+
           Navigator.of(context).pushReplacementNamed('/home');
         }
       } else {
