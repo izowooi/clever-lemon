@@ -1,5 +1,6 @@
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
 
 import '../interfaces/auth_adapter.dart';
 import '../interfaces/auth_api_service.dart';
@@ -23,12 +24,29 @@ class SupabaseAppleAuthAdapter implements AuthAdapter {
       }
 
       // Apple Sign-In 시작
-      final AuthorizationCredentialAppleID credential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-      );
+      AuthorizationCredentialAppleID credential;
+
+      if (Platform.isAndroid) {
+        // Android에서는 webAuthenticationOptions 필요
+        credential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+          webAuthenticationOptions: WebAuthenticationOptions(
+            clientId: 'com.izowooi.cleverlemon.auth',
+            redirectUri: Uri.parse('https://tnihnfuwhhtvbkmhwiut.supabase.co/auth/v1/callback'),
+          ),
+        );
+      } else {
+        // iOS/macOS에서는 webAuthenticationOptions 불필요
+        credential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+        );
+      }
 
       final String? idToken = credential.identityToken;
       
