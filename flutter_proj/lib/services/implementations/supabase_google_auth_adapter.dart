@@ -55,43 +55,68 @@ class SupabaseGoogleAuthAdapter implements AuthAdapter {
 
       if (response.user != null) {
         final user = response.user!;
+        print('Supabase 로그인 성공: ${user.id}');
 
-        // Supabase access token 가져오기
-        final session = supabase.auth.currentSession;
-        final accessToken = session?.accessToken ?? 'N/A';
+        // 사용자 상태 확인
+        final userStatusResult = await _checkUserStatus(user.id);
 
-        print('Supabase Access Token: $accessToken');
+        if (userStatusResult.exists && !userStatusResult.isDeleted) {
+          // 케이스 2: 기존 유저, 탈퇴하지 않음 - 바로 로그인 진행
+          print('기존 유저 로그인 진행');
+          return AuthResult.success(
+            'Google 로그인 성공!\n이메일: ${user.email ?? 'N/A'}\nUID: ${user.id}',
+            extra: {
+              'user_id': user.id,
+              'email': user.email,
+              'name': user.userMetadata?['full_name'] ?? googleUser.displayName,
+              'provider': 'google',
+              'user_status': 'existing',
+            },
+          );
+        } else if (userStatusResult.exists && userStatusResult.isDeleted) {
+          // 케이스 3: 탈퇴 유예기간 유저 - 알림 표시 후 정상 로그인 진행
+          print('탈퇴 유예기간 유저 - 알림 표시 후 로그인 진행');
 
-        // JWT 토큰 검증 (. 개수 확인)
-        final dotCount = accessToken.split('.').length - 1;
-        print('Access Token dots count: $dotCount');
-
-        // JWT 토큰 구조 확인
-        if (dotCount == 2) {
-          print('✅ This appears to be a valid JWT token');
+          return AuthResult.success(
+            'Google 로그인 성공!\n탈퇴 신청된 계정입니다. 로그인하여 탈퇴를 취소할 수 있습니다.\n이메일: ${user.email ?? 'N/A'}\nUID: ${user.id}',
+            extra: {
+              'user_id': user.id,
+              'email': user.email,
+              'name': user.userMetadata?['full_name'] ?? googleUser.displayName,
+              'provider': 'google',
+              'user_status': 'pending_withdrawal',
+              'show_withdrawal_notice': true,
+            },
+          );
         } else {
-          print('❌ This does not appear to be a valid JWT token');
-        }
+          // 케이스 1: 신규 유저 - 회원가입 API 호출
+          print('신규 유저 회원가입 진행');
+          final session = supabase.auth.currentSession;
+          final supabaseAccessToken = session?.accessToken ?? 'N/A';
 
-        final registerRequest = RegisterRequest(accessToken: accessToken);
-        final registerResult = await _authApiService.register(registerRequest);
-        
-        if (registerResult.isSuccess) {
-          print('회원가입 API 호출 성공: ${registerResult.message}');
-        } else {
-          print('회원가입 API 호출 실패: ${registerResult.message}');
-        }
+          final registerRequest = RegisterRequest(accessToken: supabaseAccessToken);
+          final registerResult = await _authApiService.register(registerRequest);
 
-        return AuthResult.success(
-          'Google 로그인 성공!\n이메일: ${user.email ?? 'N/A'}\nUID: ${user.id}',
-          extra: {
-            'user_id': user.id,
-            'email': user.email,
-            'name': user.userMetadata?['full_name'] ?? googleUser.displayName,
-            'provider': 'google',
-            'register_result': registerResult,
-          },
-        );
+          if (registerResult.isSuccess) {
+            print('회원가입 API 호출 성공: ${registerResult.message}');
+            return AuthResult.success(
+              'Google 로그인 성공!\n이메일: ${user.email ?? 'N/A'}\nUID: ${user.id}',
+              extra: {
+                'user_id': user.id,
+                'email': user.email,
+                'name': user.userMetadata?['full_name'] ?? googleUser.displayName,
+                'provider': 'google',
+                'user_status': 'new',
+                'register_result': registerResult,
+              },
+            );
+          } else {
+            print('회원가입 API 호출 실패: ${registerResult.message}');
+            // 회원가입 실패시 Supabase 로그아웃
+            await supabase.auth.signOut();
+            return AuthResult.failure('회원가입 실패: ${registerResult.message}');
+          }
+        }
       } else {
         return AuthResult.failure('Supabase 로그인에 실패했습니다.');
       }
@@ -106,13 +131,40 @@ class SupabaseGoogleAuthAdapter implements AuthAdapter {
     try {
       // Google Sign-In 로그아웃
       await _googleSignIn?.signOut();
-      
+
       // Supabase 로그아웃
       await supabase.auth.signOut();
-      
+
       return AuthResult.success('Google 로그아웃 성공');
     } catch (error) {
       return AuthResult.failure('로그아웃 오류: ${error.toString()}');
+    }
+  }
+
+  Future<UserStatus> _checkUserStatus(String userId) async {
+    try {
+      final response = await supabase
+          .from('users_credits')
+          .select('user_id, deleted_at')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (response == null) {
+        // 사용자가 존재하지 않음
+        return const UserStatus(exists: false, isDeleted: false);
+      } else {
+        // 사용자가 존재함
+        final deletedAt = response['deleted_at'] as String?;
+        return UserStatus(
+          exists: true,
+          isDeleted: deletedAt != null,
+          deletedAt: deletedAt != null ? DateTime.parse(deletedAt) : null,
+        );
+      }
+    } catch (error) {
+      print('사용자 상태 확인 오류: $error');
+      // 오류 발생시 신규 유저로 처리
+      return const UserStatus(exists: false, isDeleted: false);
     }
   }
 }
