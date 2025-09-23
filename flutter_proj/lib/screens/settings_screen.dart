@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
 import '../services/interfaces/auth_api_service.dart';
 import '../services/implementations/http_auth_api_service.dart';
@@ -27,14 +28,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final user = supabase.auth.currentUser;
       if (user != null) {
+        // SharedPreferences에서 저장된 provider 정보 읽기
+        String? savedProvider;
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          savedProvider = prefs.getString('login_provider');
+          print('🔐 저장된 로그인 provider: $savedProvider');
+        } catch (error) {
+          print('❌ SharedPreferences 읽기 실패: $error');
+        }
+
         setState(() {
           _currentUser = user;
-          // 로그인 타입 파악
-          final appMetadata = user.appMetadata;
-          if (appMetadata != null) {
-            final provider = appMetadata['provider'] as String?;
-            if (provider != null) {
-              switch (provider) {
+
+          // 저장된 provider 정보가 있으면 우선 사용
+          if (savedProvider != null) {
+            switch (savedProvider) {
+              case 'google':
+                _loginType = 'Google';
+                break;
+              case 'apple':
+                _loginType = 'Apple';
+                break;
+              default:
+                _loginType = savedProvider;
+            }
+            print('✅ 저장된 정보로 로그인 타입 설정: $_loginType');
+          } else {
+            // 저장된 정보가 없으면 기존 방식으로 추정
+            print('🔍 저장된 정보가 없어 메타데이터로 추정 시도');
+
+            String? detectedProvider;
+            final appMetadata = user.appMetadata;
+            if (appMetadata != null) {
+              detectedProvider = appMetadata['provider'] as String?;
+            }
+
+            // 이메일 도메인으로 추정 (구글인 경우)
+            if (detectedProvider == null && user.email != null) {
+              if (user.email!.contains('@gmail.com')) {
+                detectedProvider = 'google';
+              }
+            }
+
+            if (detectedProvider != null) {
+              switch (detectedProvider) {
                 case 'google':
                   _loginType = 'Google';
                   break;
@@ -42,9 +80,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _loginType = 'Apple';
                   break;
                 default:
-                  _loginType = provider;
+                  _loginType = detectedProvider;
               }
+            } else {
+              _loginType = '알 수 없음';
             }
+            print('🔍 추정된 로그인 타입: $_loginType');
           }
         });
       }
@@ -59,6 +100,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _signOut() async {
     try {
+      // SharedPreferences에서 저장된 provider 정보 삭제
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('login_provider');
+        print('🔐 저장된 로그인 provider 정보 삭제');
+      } catch (error) {
+        print('❌ SharedPreferences 삭제 실패: $error');
+      }
+
       await supabase.auth.signOut();
       if (mounted) {
         // 로그아웃 성공 시 로그인 화면으로 이동

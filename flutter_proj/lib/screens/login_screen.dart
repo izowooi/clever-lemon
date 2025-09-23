@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/implementations/supabase_google_auth_adapter.dart';
 import '../services/implementations/supabase_apple_auth_adapter.dart';
 import '../main.dart';
@@ -21,6 +22,16 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _googleAuthAdapter.initialize();
     _appleAuthAdapter.initialize();
+  }
+
+  Future<void> _saveLoginProvider(String provider) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('login_provider', provider);
+      print('🔐 로그인 provider 저장: $provider');
+    } catch (error) {
+      print('❌ 로그인 provider 저장 실패: $error');
+    }
   }
 
   Future<bool> _cancelWithdrawal() async {
@@ -66,6 +77,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (result.isSuccess) {
         if (mounted) {
+          // Google 로그인 provider 정보 저장
+          await _saveLoginProvider('google');
+
           // 탈퇴 유예기간 유저인지 확인
           final showWithdrawalNotice = result.extra?['show_withdrawal_notice'] == true;
 
@@ -135,6 +149,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (result.isSuccess) {
         if (mounted) {
+          // Apple 로그인 provider 정보 저장
+          await _saveLoginProvider('apple');
+
           // 탈퇴 유예기간 유저인지 확인
           final showWithdrawalNotice = result.extra?['show_withdrawal_notice'] == true;
 
