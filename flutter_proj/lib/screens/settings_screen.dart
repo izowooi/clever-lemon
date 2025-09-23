@@ -102,7 +102,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               SizedBox(height: 16),
               Text(
-                '⚠️ 탈퇴 후 복구는 불가능합니다',
+                '⚠️ 탈퇴가 완료되면 후 복구는 불가능합니다',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.orange,

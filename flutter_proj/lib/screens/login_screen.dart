@@ -23,12 +23,12 @@ class _LoginScreenState extends State<LoginScreen> {
     _appleAuthAdapter.initialize();
   }
 
-  Future<void> _cancelWithdrawal() async {
+  Future<bool> _cancelWithdrawal() async {
     try {
       final currentUser = supabase.auth.currentUser;
       if (currentUser == null) {
         print('❌ 탈퇴 취소 실패: 로그인된 사용자가 없습니다.');
-        return;
+        return false;
       }
 
       print('🔄 탈퇴 취소 처리 시작 - User ID: ${currentUser.id}');
@@ -40,16 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
           .eq('user_id', currentUser.id);
 
       print('✅ 탈퇴 취소 완료');
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎉 탈퇴가 취소되었습니다! 계속 서비스를 이용하실 수 있습니다.'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
+      return true;
     } catch (error) {
       print('❌ 탈퇴 취소 오류: $error');
       if (mounted) {
@@ -61,6 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       }
+      return false;
     }
   }
 
@@ -73,23 +65,38 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await _googleAuthAdapter.signIn();
 
       if (result.isSuccess) {
-        // 탈퇴 유예기간 유저인지 확인
-        final showWithdrawalNotice = result.extra?['show_withdrawal_notice'] == true;
+        if (mounted) {
+          // 탈퇴 유예기간 유저인지 확인
+          final showWithdrawalNotice = result.extra?['show_withdrawal_notice'] == true;
 
-        if (showWithdrawalNotice) {
-          // 탈퇴 취소 처리
-          await _cancelWithdrawal();
-        } else {
-          // 일반 로그인 성공 메시지
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('로그인 성공!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          if (showWithdrawalNotice) {
+            // 탈퇴 취소 처리
+            final cancelSuccess = await _cancelWithdrawal();
+            if (cancelSuccess && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🎉 탈퇴가 취소되었습니다! 계속 서비스를 이용하실 수 있습니다.'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 4),
+                ),
+              );
+              // 스낵바가 보이도록 약간의 지연
+              await Future.delayed(const Duration(milliseconds: 500));
+            }
+          } else {
+            // 일반 로그인 성공 메시지
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('로그인 성공!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed('/home');
+          }
         }
-
-        Navigator.of(context).pushReplacementNamed('/home');
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -133,7 +140,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
           if (showWithdrawalNotice) {
             // 탈퇴 취소 처리
-            await _cancelWithdrawal();
+            final cancelSuccess = await _cancelWithdrawal();
+            if (cancelSuccess && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🎉 탈퇴가 취소되었습니다! 계속 서비스를 이용하실 수 있습니다.'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 4),
+                ),
+              );
+              // 스낵바가 보이도록 약간의 지연
+              await Future.delayed(const Duration(milliseconds: 500));
+            }
           } else {
             // 일반 로그인 성공 메시지
             ScaffoldMessenger.of(context).showSnackBar(
@@ -144,7 +162,9 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           }
 
-          Navigator.of(context).pushReplacementNamed('/home');
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed('/home');
+          }
         }
       } else {
         if (mounted) {

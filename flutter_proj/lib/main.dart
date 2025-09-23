@@ -103,13 +103,17 @@ class _PoetryWriterAppState extends State<PoetryWriterApp> {
       _isLoading = false;
     });
 
-    // 인증 상태 변경 리스너 설정
+    // 인증 상태 변경 리스너 설정 (로그아웃시에만 반응)
     supabase.auth.onAuthStateChange.listen((data) {
       final session = data.session;
       if (mounted) {
-        setState(() {
-          _isAuthenticated = session != null;
-        });
+        // 로그아웃된 경우에만 로그인 화면으로 이동
+        if (session == null && _isAuthenticated) {
+          setState(() {
+            _isAuthenticated = false;
+          });
+        }
+        // 로그인된 경우에는 수동으로 화면 전환하도록 함 (자동 전환 방지)
       }
     });
   }

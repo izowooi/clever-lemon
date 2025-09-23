@@ -31,6 +31,29 @@ class WithdrawRequest {
 }
 
 @immutable
+class UserStatus {
+  final bool exists;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+
+  const UserStatus({
+    required this.exists,
+    required this.isDeleted,
+    this.deletedAt,
+  });
+
+  factory UserStatus.fromJson(Map<String, dynamic> json) {
+    return UserStatus(
+      exists: json['exists'] ?? false,
+      isDeleted: json['is_deleted'] ?? false,
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'])
+          : null,
+    );
+  }
+}
+
+@immutable
 class ApiResult<T> {
   final bool isSuccess;
   final String message;
