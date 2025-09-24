@@ -1,9 +1,9 @@
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
-import 'dart:math';
 import 'dart:convert';
 import 'dart:async';
+import 'package:crypto/crypto.dart';
 
 import '../interfaces/auth_adapter.dart';
 import '../interfaces/auth_api_service.dart';
@@ -18,12 +18,6 @@ class SupabaseAppleAuthAdapter implements AuthAdapter {
     print('SupabaseAppleAuthAdapter initialize');
   }
 
-  /// Apple 로그인용 nonce 생성
-  String _generateNonce() {
-    final random = Random.secure();
-    final bytes = List<int>.generate(32, (i) => random.nextInt(256));
-    return base64Url.encode(bytes).replaceAll('=', '');
-  }
 
   @override
   Future<AuthResult> signIn() async {
@@ -140,7 +134,7 @@ class SupabaseAppleAuthAdapter implements AuthAdapter {
     }
   }
 
-  /// iOS용 네이티브 Apple Sign In
+  /// iOS용 네이티브 Apple Sign In (Supabase 문서 기준)
   Future<AuthResult> _signInWithAppleIOS() async {
     // Apple Sign-In 가능 여부 확인
     if (!await SignInWithApple.isAvailable()) {
@@ -148,30 +142,35 @@ class SupabaseAppleAuthAdapter implements AuthAdapter {
     }
 
     print('iOS 네이티브 Apple 로그인 시작');
-    
-    final nonce = _generateNonce();
-    
+
     try {
-      // 네이티브 Apple Sign-In
+      // Supabase 문서에 따른 올바른 nonce 처리
+      final rawNonce = supabase.auth.generateRawNonce();
+      final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+      print('Raw nonce: $rawNonce');
+      print('Hashed nonce: $hashedNonce');
+
+      // 네이티브 Apple Sign-In (webAuthenticationOptions 없이)
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
-        nonce: nonce,
+        nonce: hashedNonce, // 해싱된 nonce 전달
       );
 
       final String? idToken = credential.identityToken;
-      
+
       if (idToken == null) {
         return AuthResult.failure('Apple 인증 토큰을 가져올 수 없습니다.');
       }
 
-      // Supabase로 Apple 로그인
+      // Supabase로 Apple 로그인 (raw nonce 전달)
       final AuthResponse response = await supabase.auth.signInWithIdToken(
         provider: OAuthProvider.apple,
         idToken: idToken,
-        nonce: nonce,
+        nonce: rawNonce, // raw nonce 전달 (중요!)
       );
 
       if (response.user != null) {
@@ -192,7 +191,7 @@ class SupabaseAppleAuthAdapter implements AuthAdapter {
       if (error.toString().contains('canceled')) {
         return AuthResult.failure('Apple 로그인이 취소되었습니다.');
       }
-      throw error;
+      rethrow;
     }
   }
 
