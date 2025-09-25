@@ -10,6 +10,7 @@ import '../main.dart';
 import 'poem_settings_provider.dart';
 import 'database_provider.dart';
 import 'poetry_list_provider.dart';
+import 'user_credits_provider.dart';
 
 enum CreationStep {
   wordSelection,
@@ -192,6 +193,9 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
       
       // 시 목록 새로고침
       _ref.read(poetryListProvider.notifier).refreshAfterSave();
+
+      // 재화 정보 새로고침 (시 생성 완료 후)
+      _ref.read(userCreditsProvider.notifier).refreshCredits();
     } catch (e) {
       // 저장 실패해도 UI는 계속 진행
       print('시 저장 중 오류 발생: $e');

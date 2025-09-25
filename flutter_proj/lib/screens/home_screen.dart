@@ -1,25 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'sequential_creation_screen.dart';
 import 'poetry_list_screen.dart';
 import 'settings_screen.dart';
 import 'poem_settings_screen.dart';
-import '../main.dart';
+import '../providers/user_credits_provider.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   int _currentIndex = 0;
-  int _totalCredits = 0;
-  int _freeCredits = 0;
-  int _paidCredits = 0;
-  bool _isLoadingCredits = false;
 
   @override
   void initState() {
@@ -30,45 +26,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _currentIndex = _tabController.index;
       });
     });
-    _loadUserCredits();
-  }
-
-  Future<void> _loadUserCredits() async {
-    final currentUser = supabase.auth.currentUser;
-    if (currentUser == null) {
-      return;
-    }
-
-    setState(() {
-      _isLoadingCredits = true;
-    });
-
-    try {
-      final response = await supabase
-          .from('users_credits')
-          .select('free_credits, paid_credits')
-          .eq('user_id', currentUser.id)
-          .maybeSingle();
-
-      if (response != null && mounted) {
-        setState(() {
-          _freeCredits = response['free_credits'] ?? 0;
-          _paidCredits = response['paid_credits'] ?? 0;
-          _totalCredits = _freeCredits + _paidCredits;
-        });
-      }
-    } catch (error) {
-      print('재화 정보 로딩 오류: $error');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingCredits = false;
-        });
-      }
-    }
   }
 
   void _showCreditsDetail() {
+    final creditsState = ref.read(userCreditsProvider);
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -87,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('무료 재화:', style: TextStyle(fontSize: 16)),
-                  Text('$_freeCredits개',
+                  Text('${creditsState.freeCredits}개',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -96,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('유료 재화:', style: TextStyle(fontSize: 16)),
-                  Text('$_paidCredits개',
+                  Text('${creditsState.paidCredits}개',
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -106,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 children: [
                   const Text('총 재화:',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Text('$_totalCredits개',
+                  Text('${creditsState.totalCredits}개',
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
                 ],
               ),
@@ -133,6 +95,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final creditsState = ref.watch(userCreditsProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -162,14 +126,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('✍️ ', style: TextStyle(fontSize: 16)),
-                  _isLoadingCredits
+                  creditsState.isLoading
                       ? const SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          '$_totalCredits',
+                          '${creditsState.totalCredits}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
