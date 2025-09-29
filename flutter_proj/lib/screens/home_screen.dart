@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'sequential_creation_screen.dart';
+import 'generic_creation_screen.dart';
 import 'settings_screen.dart';
 import '../providers/user_credits_provider.dart';
+import '../providers/generic_creation_provider.dart';
 import '../widgets/poetry_list_popup.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -19,7 +20,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       setState(() {
         _currentIndex = _tabController.index;
@@ -161,7 +162,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
       body: TabBarView(
         controller: _tabController,
         children: const [
-          SequentialCreationScreen(),
+          GenericCreationScreen(
+            creationType: CreationType.poetry,
+          ),
+          GenericCreationScreen(
+            creationType: CreationType.dailyVerse,
+          ),
           SettingsScreen(),
         ],
       ),
@@ -172,10 +178,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
         },
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.create),
             label: '시 창작',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.auto_stories),
+            label: '오늘의 글귀',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
