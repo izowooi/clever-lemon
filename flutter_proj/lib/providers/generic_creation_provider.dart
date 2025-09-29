@@ -194,9 +194,10 @@ class GenericCreationNotifier extends StateNotifier<GenericCreationState> {
         length: "${state.selectedLength ?? 12}행",
       );
 
-      // API 엔드포인트는 creation type에 따라 달라짐
-      // TODO: PoemApiService에서 CreationType을 받아서 적절한 엔드포인트로 요청하도록 수정
-      final result = await _poemApiService.generatePoem(request);
+      // CreationType에 따라 적절한 API 메소드 호출
+      final result = _creationType == CreationType.poetry
+          ? await _poemApiService.generatePoem(request)
+          : await _poemApiService.generateDailyVerse(request);
 
       if (result.isSuccess && result.data != null) {
         final templates = _convertApiResponseToTemplates(result.data!, keywords);

@@ -30,4 +30,5 @@ class PoemGenerateRequest {
 
 abstract class PoemApiService {
   Future<ApiResult<Map<String, dynamic>>> generatePoem(PoemGenerateRequest request);
+  Future<ApiResult<Map<String, dynamic>>> generateDailyVerse(PoemGenerateRequest request);
 }
