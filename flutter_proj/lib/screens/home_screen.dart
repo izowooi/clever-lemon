@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'sequential_creation_screen.dart';
-import 'poetry_list_screen.dart';
 import 'settings_screen.dart';
 import 'poem_settings_screen.dart';
 import '../providers/user_credits_provider.dart';
+import '../widgets/poetry_list_popup.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +20,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       setState(() {
         _currentIndex = _tabController.index;
@@ -87,6 +87,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     );
   }
 
+  void _showPoetryListPopup() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return const PoetryListPopup();
+      },
+    );
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -113,7 +122,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
             onTap: _showCreditsDetail,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+              margin: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(20),
@@ -143,19 +152,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
               ),
             ),
           ),
+          IconButton(
+            onPressed: _showPoetryListPopup,
+            icon: const Icon(Icons.library_books),
+            tooltip: '작품 목록',
+          ),
         ],
       ),
       body: TabBarView(
         controller: _tabController,
         children: const [
           SequentialCreationScreen(),
-          PoetryListScreen(),
           PoemSettingsScreen(),
           SettingsScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: (index) {
           _tabController.animateTo(index);
@@ -166,10 +178,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
           BottomNavigationBarItem(
             icon: Icon(Icons.create),
             label: '시 창작',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.library_books),
-            label: '작품 목록',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.tune),
