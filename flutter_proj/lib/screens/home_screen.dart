@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'sequential_creation_screen.dart';
 import 'settings_screen.dart';
-import 'poem_settings_screen.dart';
 import '../providers/user_credits_provider.dart';
 import '../widgets/poetry_list_popup.dart';
 
@@ -20,7 +19,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       setState(() {
         _currentIndex = _tabController.index;
@@ -163,7 +162,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
         controller: _tabController,
         children: const [
           SequentialCreationScreen(),
-          PoemSettingsScreen(),
           SettingsScreen(),
         ],
       ),
@@ -178,10 +176,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
           BottomNavigationBarItem(
             icon: Icon(Icons.create),
             label: '시 창작',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.tune),
-            label: '시 설정',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
