@@ -90,11 +90,15 @@ class SequentialCreationScreen extends ConsumerWidget {
           // 진행 상태 표시
           _buildProgressIndicator(context, state),
           const SizedBox(height: 16),
-          
+
+          // 뒤로가기 버튼
+          if (notifier.canGoBack())
+            _buildBackButton(context, notifier),
+
           // 에러 메시지 표시
           if (state.errorMessage != null)
             _buildErrorMessage(context, state, notifier),
-          
+
           // 단어 선택 카드
           Expanded(
             child: SelectionCard<Word>(
@@ -142,21 +146,34 @@ class SequentialCreationScreen extends ConsumerWidget {
   }
 
   Widget _buildCompletedView(BuildContext context, PoetryCreationState state, PoetryCreationNotifier notifier) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: state.generatedTemplates.length + 1, // 시 4개 + 축하 카드 1개
-      itemBuilder: (context, index) {
-        // 마지막 인덱스는 축하 카드
-        if (index == state.generatedTemplates.length) {
-          return _buildCongratulationsCard(context, state, notifier);
-        }
-        
-        // 시 템플릿 카드들
-        final template = state.generatedTemplates[index];
-        return PoetryTemplateCard(
-          template: template,
-        );
-      },
+    return Column(
+      children: [
+        // 뒤로가기 버튼
+        if (notifier.canGoBack())
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: _buildBackButton(context, notifier),
+          ),
+
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: state.generatedTemplates.length + 1, // 시 4개 + 축하 카드 1개
+            itemBuilder: (context, index) {
+              // 마지막 인덱스는 축하 카드
+              if (index == state.generatedTemplates.length) {
+                return _buildCongratulationsCard(context, state, notifier);
+              }
+
+              // 시 템플릿 카드들
+              final template = state.generatedTemplates[index];
+              return PoetryTemplateCard(
+                template: template,
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -241,6 +258,11 @@ class SequentialCreationScreen extends ConsumerWidget {
               children: [
                 _buildProgressIndicatorForSettings(context, 1, 6, state),
                 const SizedBox(height: 16),
+
+                // 뒤로가기 버튼
+                if (notifier.canGoBack())
+                  _buildBackButton(context, notifier),
+
                 Expanded(
                   child: SelectionCard<String>(
                     items: config.styles,
@@ -273,6 +295,11 @@ class SequentialCreationScreen extends ConsumerWidget {
               children: [
                 _buildProgressIndicatorForSettings(context, 2, 6, state),
                 const SizedBox(height: 16),
+
+                // 뒤로가기 버튼
+                if (notifier.canGoBack())
+                  _buildBackButton(context, notifier),
+
                 Expanded(
                   child: SelectionCard<String>(
                     items: config.authorStyles,
@@ -305,6 +332,11 @@ class SequentialCreationScreen extends ConsumerWidget {
               children: [
                 _buildProgressIndicatorForSettings(context, 3, 6, state),
                 const SizedBox(height: 16),
+
+                // 뒤로가기 버튼
+                if (notifier.canGoBack())
+                  _buildBackButton(context, notifier),
+
                 Expanded(
                   child: SelectionCard<int>(
                     items: config.lengths,
@@ -434,6 +466,32 @@ class SequentialCreationScreen extends ConsumerWidget {
       default:
         return '진행 중';
     }
+  }
+
+  /// 뒤로가기 버튼
+  Widget _buildBackButton(BuildContext context, PoetryCreationNotifier notifier) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: OutlinedButton.icon(
+        onPressed: notifier.goToPreviousStep,
+        icon: const Icon(Icons.arrow_back),
+        label: const Text(
+          '이전 단계로',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+            width: 1.5,
+          ),
+        ),
+      ),
+    );
   }
 
   /// 길이 표시 텍스트 변환

@@ -13,6 +13,9 @@ import 'poetry_list_provider.dart';
 import 'user_credits_provider.dart';
 
 enum CreationStep {
+  styleSelection,
+  authorStyleSelection,
+  lengthSelection,
   wordSelection,
   templateSelection,
 }
@@ -33,14 +36,22 @@ class PoetryCreationState {
   final bool isLoading;
   final String? errorMessage;
 
+  // 설정 관련 필드들
+  final String? selectedStyle;
+  final String? selectedAuthorStyle;
+  final int? selectedLength;
+
   const PoetryCreationState({
-    this.currentStep = CreationStep.wordSelection,
+    this.currentStep = CreationStep.styleSelection,
     this.sequentialStep = 0,
     this.currentWords = const [],
     this.selectedWords = const [],
     this.generatedTemplates = const [],
     this.isLoading = false,
     this.errorMessage,
+    this.selectedStyle,
+    this.selectedAuthorStyle,
+    this.selectedLength,
   });
 
   PoetryCreationState copyWith({
@@ -51,6 +62,9 @@ class PoetryCreationState {
     List<PoetryTemplate>? generatedTemplates,
     bool? isLoading,
     String? errorMessage,
+    String? selectedStyle,
+    String? selectedAuthorStyle,
+    int? selectedLength,
   }) {
     return PoetryCreationState(
       currentStep: currentStep ?? this.currentStep,
@@ -60,6 +74,9 @@ class PoetryCreationState {
       generatedTemplates: generatedTemplates ?? this.generatedTemplates,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage ?? this.errorMessage,
+      selectedStyle: selectedStyle ?? this.selectedStyle,
+      selectedAuthorStyle: selectedAuthorStyle ?? this.selectedAuthorStyle,
+      selectedLength: selectedLength ?? this.selectedLength,
     );
   }
 }
@@ -92,7 +109,7 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
   /// 새로운 창작 과정을 시작합니다
   Future<void> startNewCreation() async {
     state = const PoetryCreationState();
-    await loadRandomWords();
+    // 첫 번째 단계는 스타일 선택이므로 단어는 로드하지 않음
   }
 
   /// 무작위 단어들을 로드합니다
@@ -107,17 +124,43 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
     }
   }
 
+  /// 시 스타일을 선택합니다
+  void selectStyle(String style) {
+    state = state.copyWith(
+      selectedStyle: style,
+      currentStep: CreationStep.authorStyleSelection,
+    );
+  }
+
+  /// 작가 스타일을 선택합니다
+  void selectAuthorStyle(String authorStyle) {
+    state = state.copyWith(
+      selectedAuthorStyle: authorStyle,
+      currentStep: CreationStep.lengthSelection,
+    );
+  }
+
+  /// 시 길이를 선택합니다
+  void selectLength(int length) {
+    state = state.copyWith(
+      selectedLength: length,
+      currentStep: CreationStep.wordSelection,
+    );
+    // 단어 선택 단계로 넘어가면서 첫 번째 단어를 로드
+    loadRandomWords();
+  }
+
   /// 단어를 선택합니다 (순차적 선택)
   void selectWordSequentially(Word word) {
     if (state.selectedWords.length < 3) {
       final newSelectedWords = [...state.selectedWords, word];
       final newStep = state.sequentialStep + 1;
-      
+
       state = state.copyWith(
         selectedWords: newSelectedWords,
         sequentialStep: newStep,
       );
-      
+
       if (newSelectedWords.length == 3) {
         _generateTemplates();
       } else {
@@ -139,14 +182,15 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
         return;
       }
       
+      // 선택된 설정 사용 (선택되지 않은 경우 기본값 사용)
       final poemSettings = _ref.read(poemSettingsProvider);
 
       final request = PoemGenerateRequest(
         userId: currentUser.id,
-        style: poemSettings.style,
-        authorStyle: poemSettings.authorStyle,
+        style: state.selectedStyle ?? poemSettings.style,
+        authorStyle: state.selectedAuthorStyle ?? poemSettings.authorStyle,
         keywords: keywords,
-        length: poemSettings.length.toString() + "행",
+        length: "${state.selectedLength ?? poemSettings.length}행",
       );
       
       final result = await _poemApiService.generatePoem(request);
@@ -278,6 +322,84 @@ class PoetryCreationNotifier extends StateNotifier<PoetryCreationState> {
   /// 에러를 클리어합니다
   void clearError() {
     state = state.copyWith(errorMessage: null);
+  }
+
+  /// 이전 단계로 돌아갑니다
+  void goToPreviousStep() {
+    switch (state.currentStep) {
+      case CreationStep.authorStyleSelection:
+        // 작가 스타일 선택 -> 시 스타일 선택
+        state = state.copyWith(
+          selectedAuthorStyle: null,
+          currentStep: CreationStep.styleSelection,
+        );
+        break;
+      case CreationStep.lengthSelection:
+        // 시 길이 선택 -> 작가 스타일 선택
+        state = state.copyWith(
+          selectedLength: null,
+          currentStep: CreationStep.authorStyleSelection,
+        );
+        break;
+      case CreationStep.wordSelection:
+        if (state.selectedWords.isEmpty) {
+          // 첫 번째 단어 선택 -> 시 길이 선택
+          state = state.copyWith(
+            currentStep: CreationStep.lengthSelection,
+            currentWords: [],
+            sequentialStep: 0,
+          );
+        } else {
+          // 단어 선택 중에서 이전 단어로
+          final newSelectedWords = [...state.selectedWords];
+          newSelectedWords.removeLast();
+          final newStep = state.sequentialStep - 1;
+
+          state = state.copyWith(
+            selectedWords: newSelectedWords,
+            sequentialStep: newStep,
+          );
+
+          // 새로운 단어들을 다시 로드
+          loadRandomWords();
+        }
+        break;
+      case CreationStep.templateSelection:
+        // 템플릿 선택 -> 단어 선택 (마지막 단어 제거)
+        if (state.selectedWords.isNotEmpty) {
+          final newSelectedWords = [...state.selectedWords];
+          newSelectedWords.removeLast();
+
+          state = state.copyWith(
+            selectedWords: newSelectedWords,
+            currentStep: CreationStep.wordSelection,
+            generatedTemplates: [],
+            sequentialStep: state.selectedWords.length - 1,
+          );
+
+          // 새로운 단어들을 다시 로드
+          loadRandomWords();
+        }
+        break;
+      case CreationStep.styleSelection:
+        // 첫 번째 단계이므로 뒤로갈 수 없음
+        break;
+    }
+  }
+
+  /// 현재 단계에서 뒤로갈 수 있는지 확인
+  bool canGoBack() {
+    switch (state.currentStep) {
+      case CreationStep.styleSelection:
+        return false; // 첫 번째 단계
+      case CreationStep.authorStyleSelection:
+      case CreationStep.lengthSelection:
+        return true;
+      case CreationStep.wordSelection:
+        return true; // 언제나 뒤로갈 수 있음
+      case CreationStep.templateSelection:
+        return true; // 단어 선택으로 돌아갈 수 있음
+    }
   }
 }
 
