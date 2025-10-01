@@ -163,3 +163,64 @@ GET http://127.0.0.1:8000/users/nonexistent/currency
 Accept: application/json
 
 ###
+
+# 10. 오늘의 글귀 생성 (OpenAI API 사용)
+POST http://127.0.0.1:8000/quotes/generate
+Content-Type: application/json
+
+{
+  "user_id": "test_user_001",
+  "style": "희망적이고 위로가 되는",
+  "author_style": "헤르만 헤세",
+  "keywords": ["봄", "시작", "용기"],
+  "length": "짧게 1-2문장",
+  "ai_model": "gpt-5-mini-2025-08-07",
+  "reasoning_effort": "low"
+}
+
+###
+
+# 10-2. 다른 스타일의 글귀 생성 테스트
+POST http://127.0.0.1:8000/quotes/generate
+Content-Type: application/json
+
+{
+  "user_id": "test_user_001",
+  "style": "동기부여가 되는",
+  "author_style": "김소월",
+  "keywords": ["꿈", "도전", "성공"],
+  "length": "보통 2-3문장"
+}
+
+###
+
+# 10-3. 긴 글귀 생성 테스트
+POST http://127.0.0.1:8000/quotes/generate
+Content-Type: application/json
+
+{
+  "user_id": "test_user_001",
+  "style": "철학적이고 깊이있는",
+  "author_style": "니체",
+  "keywords": ["인생", "의미", "자유", "진리"],
+  "length": "길게 3-4문장",
+  "ai_model": "gpt-5-mini-2025-08-07",
+  "reasoning_effort": "medium"
+}
+
+###
+
+# 10-4. GPT-4o 모델로 글귀 생성 테스트
+POST http://127.0.0.1:8000/quotes/generate
+Content-Type: application/json
+
+{
+  "user_id": "test_user_001",
+  "style": "낭만적이고 서정적인",
+  "author_style": "윤동주",
+  "keywords": ["달", "별", "밤", "그리움"],
+  "length": "보통 2-3문장",
+  "ai_model": "gpt-4o"
+}
+
+###
