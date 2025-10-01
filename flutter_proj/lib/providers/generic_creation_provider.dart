@@ -200,7 +200,10 @@ class GenericCreationNotifier extends StateNotifier<GenericCreationState> {
           : await _poemApiService.generateDailyVerse(request);
 
       if (result.isSuccess && result.data != null) {
-        final templates = _convertApiResponseToTemplates(result.data!, keywords);
+        // CreationType에 따라 적절한 파싱 메소드 호출
+        final templates = _creationType == CreationType.poetry
+            ? _convertPoemResponseToTemplates(result.data!, keywords)
+            : _convertDailyVerseResponseToTemplates(result.data!, keywords);
 
         // 모든 결과물을 바로 저장
         await _saveAllResults(templates, keywords);
@@ -257,8 +260,8 @@ class GenericCreationNotifier extends StateNotifier<GenericCreationState> {
     }
   }
 
-  /// API 응답을 PoetryTemplate 리스트로 변환합니다
-  List<PoetryTemplate> _convertApiResponseToTemplates(Map<String, dynamic> apiData, List<String> keywords) {
+  /// 시 생성 API 응답을 PoetryTemplate 리스트로 변환합니다
+  List<PoetryTemplate> _convertPoemResponseToTemplates(Map<String, dynamic> apiData, List<String> keywords) {
     final templates = <PoetryTemplate>[];
 
     if (apiData['poems'] is List) {
@@ -269,7 +272,7 @@ class GenericCreationNotifier extends StateNotifier<GenericCreationState> {
           final parsedPoem = _parsePoemString(poem);
           final template = PoetryTemplate(
             id: 'api_${DateTime.now().millisecondsSinceEpoch}_$i',
-            title: parsedPoem['title'] ?? (_creationType == CreationType.poetry ? '시 ${i + 1}' : '글귀 ${i + 1}'),
+            title: parsedPoem['title'] ?? '시 ${i + 1}',
             content: parsedPoem['content'] ?? poem,
             keywords: keywords,
             createdAt: DateTime.now(),
@@ -291,7 +294,50 @@ class GenericCreationNotifier extends StateNotifier<GenericCreationState> {
     if (templates.isEmpty) {
       templates.add(PoetryTemplate(
         id: 'fallback_${DateTime.now().millisecondsSinceEpoch}',
-        title: _creationType == CreationType.poetry ? '생성된 시' : '생성된 글귀',
+        title: '생성된 시',
+        content: apiData['content']?.toString() ?? apiData.toString(),
+        keywords: keywords,
+        createdAt: DateTime.now(),
+      ));
+    }
+
+    return templates;
+  }
+
+  /// 오늘의 글귀 API 응답을 PoetryTemplate 리스트로 변환합니다
+  List<PoetryTemplate> _convertDailyVerseResponseToTemplates(Map<String, dynamic> apiData, List<String> keywords) {
+    final templates = <PoetryTemplate>[];
+
+    if (apiData['quotes'] is List) {
+      final quotes = apiData['quotes'] as List;
+      for (int i = 0; i < quotes.length; i++) {
+        final verse = quotes[i];
+        if (verse is String) {
+          final template = PoetryTemplate(
+            id: 'api_${DateTime.now().millisecondsSinceEpoch}_$i',
+            title: '글귀 ${i + 1}',
+            content: verse,
+            keywords: keywords,
+            createdAt: DateTime.now(),
+          );
+          templates.add(template);
+        } else if (verse is Map<String, dynamic>) {
+          final template = PoetryTemplate(
+            id: 'api_${DateTime.now().millisecondsSinceEpoch}_$i',
+            title: verse['title'] ?? '글귀 ${i + 1}',
+            content: verse['content'] ?? verse['text'] ?? '',
+            keywords: keywords,
+            createdAt: DateTime.now(),
+          );
+          templates.add(template);
+        }
+      }
+    }
+
+    if (templates.isEmpty) {
+      templates.add(PoetryTemplate(
+        id: 'fallback_${DateTime.now().millisecondsSinceEpoch}',
+        title: '생성된 글귀',
         content: apiData['content']?.toString() ?? apiData.toString(),
         keywords: keywords,
         createdAt: DateTime.now(),
