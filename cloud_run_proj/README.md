@@ -409,6 +409,51 @@ sequenceDiagram
 3. **⚙️ 규칙 조정**: Rate Limiting 임계값 동적 조정
 4. **🔄 복구**: 정상화 후 점진적 규칙 완화
 
+## ⏰ 자동 크레딧 보충 시스템 (Supabase pg_cron)
+
+사용자의 무료 크레딧이 10 이하인 경우 자동으로 10으로 보충하는 시스템을 설정할 수 있습니다.
+
+### 🛠️ 설정 단계
+
+#### 1️⃣ Supabase Dashboard 접속
+1. **Supabase Dashboard** 로그인
+2. 프로젝트 선택
+3. 좌측 메뉴에서 **Database** 클릭
+
+#### 2️⃣ pg_cron Extension 활성화
+1. **Extensions** 탭 선택
+2. **pg_cron** 검색 후 **Enable** 버튼 클릭
+3. Extension 활성화 완료 확인
+
+#### 3️⃣ 자동 크레딧 보충 Job 생성
+**SQL Editor**에서 다음 쿼리를 실행하여 매일 자동으로 크레딧을 보충합니다:
+
+```sql
+-- 매일 오전 9시에 free_credits가 10 이하인 사용자에게 크레딧 보충
+SELECT cron.schedule(
+    'daily-free-credits-replenishment',  -- job 이름
+    '0 9 * * *',                        -- cron 표현식 (매일 오전 9시)
+    $$
+    UPDATE users_credits
+    SET
+        free_credits = 10,
+        updated_at = now()
+    WHERE
+        free_credits <= 10
+        AND deleted_at IS NULL;
+    $$
+);
+```
+
+### 📊 Cron 스케줄 설명
+
+| 표현식 | 의미 | 실행 시간 |
+|--------|------|-----------|
+| `0 9 * * *` | 매일 오전 9시 | 09:00 |
+| `0 0 * * *` | 매일 자정 | 00:00 |
+| `0 */6 * * *` | 6시간마다 | 00:00, 06:00, 12:00, 18:00 |
+| `0 0 * * 1` | 매주 월요일 자정 | 월요일 00:00 |
+
 ## 📄 라이센스
 
 이 프로젝트는 MIT 라이센스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 확인하세요.
