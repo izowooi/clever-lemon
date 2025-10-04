@@ -5,6 +5,8 @@ class ApiConfig {
   
   static const String _productionBaseUrl = 'https://clever-lemon.zowoo.uk';
   static const String _developmentBaseUrl = 'https://clever-lemon.zowoo.uk';
+  // static const String _productionBaseUrl = 'http://192.168.50.112:8000';
+  // static const String _developmentBaseUrl = 'http://192.168.50.112:8000';
   
   static String get baseUrl {
     // 1. 환경변수가 설정되어 있으면 그것을 사용
