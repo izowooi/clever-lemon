@@ -6,6 +6,7 @@ import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'config/api_config.dart';
 import 'services/remote_config_service.dart';
+import 'providers/font_size_provider.dart';
 
 // Supabase 설정
 const supabaseUrl = 'https://tnihnfuwhhtvbkmhwiut.supabase.co';
@@ -77,14 +78,14 @@ Future<void> _initializeRemoteConfig() async {
   }
 }
 
-class PoetryWriterApp extends StatefulWidget {
+class PoetryWriterApp extends ConsumerStatefulWidget {
   const PoetryWriterApp({super.key});
 
   @override
-  State<PoetryWriterApp> createState() => _PoetryWriterAppState();
+  ConsumerState<PoetryWriterApp> createState() => _PoetryWriterAppState();
 }
 
-class _PoetryWriterAppState extends State<PoetryWriterApp> {
+class _PoetryWriterAppState extends ConsumerState<PoetryWriterApp> {
   bool _isLoading = true;
   bool _isAuthenticated = false;
 
@@ -120,6 +121,8 @@ class _PoetryWriterAppState extends State<PoetryWriterApp> {
 
   @override
   Widget build(BuildContext context) {
+    final fontSizeOption = ref.watch(fontSizeProvider);
+
     if (_isLoading) {
       return const MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -134,6 +137,14 @@ class _PoetryWriterAppState extends State<PoetryWriterApp> {
     return MaterialApp(
       title: 'Poetry Writer',
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(fontSizeOption.scale),
+          ),
+          child: child!,
+        );
+      },
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.deepPurple,

@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
 import '../services/interfaces/auth_api_service.dart';
 import '../services/implementations/http_auth_api_service.dart';
+import '../providers/font_size_provider.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   User? _currentUser;
   String _loginType = '알 수 없음';
   bool _isLoading = true;
@@ -296,11 +298,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('설정'),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // 사용자 정보 섹션
             const Text(
               '계정 정보',
@@ -386,6 +389,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 32),
 
+            // 화면 설정 섹션
+            const Text(
+              '화면 설정',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 폰트 크기 설정
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.text_fields, color: Colors.blue),
+                        const SizedBox(width: 16),
+                        const Text(
+                          '글자 크기',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: FontSizeOption.values.map((option) {
+                        final currentOption = ref.watch(fontSizeProvider);
+                        final isSelected = currentOption == option;
+                        return ChoiceChip(
+                          label: Text(option.label),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            if (selected) {
+                              ref.read(fontSizeProvider.notifier).setFontSize(option);
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
             // 로그아웃 버튼
             SizedBox(
               width: double.infinity,
@@ -436,7 +494,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
