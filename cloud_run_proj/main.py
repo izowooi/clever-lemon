@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 from verify_token import verify_and_decode_supabase_jwt
 from poem_generator_modern import PoemGenerator, GenOptions
+from quote_generator_modern import QuoteGenerator
 
 load_dotenv()
 
@@ -28,6 +29,14 @@ try:
 except Exception as e:
     print(f"⚠️ PoemGenerator 초기화 실패: {e}")
     poem_generator = None
+
+# QuoteGenerator 인스턴스 초기화 (전역으로 재사용)
+try:
+    quote_generator = QuoteGenerator()
+    print("✅ QuoteGenerator 초기화 완료")
+except Exception as e:
+    print(f"⚠️ QuoteGenerator 초기화 실패: {e}")
+    quote_generator = None
 
 app = FastAPI(title="시 생성 API", version="1.0.0")
 
@@ -79,6 +88,26 @@ class PoemResponse(BaseModel):
     generation_time: Optional[float] = None
     remaining_credits: Optional[int] = None
     error: Optional[str] = None
+
+# 오늘의 글귀 관련 모델
+class QuoteRequest(BaseModel):
+    user_id: str  # 사용자 ID
+    style: str  # 성향 (예: "희망적이고 위로가 되는", "동기부여가 되는")
+    author_style: str  # 작가 스타일 (예: "헤르만 헤세", "김소월", "괴테")
+    keywords: List[str]  # 포함할 단어들 (3-5개)
+    length: str  # 길이 (예: "짧게 1-2문장", "보통 2-3문장", "길게 3-4문장")
+    ai_model: Optional[str] = "gpt-5-mini-2025-08-07"  # AI 모델
+    reasoning_effort: Optional[str] = "low"  # "low", "medium", "high"
+
+class QuoteResponse(BaseModel):
+    success: bool
+    request: dict  # 요청 정보
+    quotes: List[str]  # 생성된 글귀들 (4개)
+    generation_time: Optional[float] = None
+    remaining_credits: Optional[int] = None
+    ai_model_used: Optional[str] = None
+    error: Optional[str] = None
+    error_code: Optional[str] = None
 
 class TokenRequest(BaseModel):
     token: str
@@ -495,4 +524,97 @@ async def generate_poems(poem_request: PoemRequest):
         raise HTTPException(
             status_code=500,
             detail=f"시 생성 중 오류가 발생했습니다: {str(e)}"
+        )
+
+
+# 7. 오늘의 글귀 생성
+@app.post("/quotes/generate", response_model=QuoteResponse)
+async def generate_quotes(quote_request: QuoteRequest):
+    """OpenAI를 이용해 4개의 글귀를 생성합니다 (크레딧 검증 포함)"""
+    if not quote_generator:
+        raise HTTPException(
+            status_code=500,
+            detail="글귀 생성기가 초기화되지 않았습니다. OpenAI API 키를 확인해주세요."
+        )
+    
+    # 크레딧 검증
+    validate_user_credit(quote_request.user_id)
+    
+    start_time = datetime.now()
+    
+    try:
+        # AI 모델 설정
+        model = quote_request.ai_model or os.getenv('OPENAI_MODEL', 'gpt-5-mini-2025-08-07')
+        reasoning_effort = quote_request.reasoning_effort or "low"
+        
+        # 모델에 따른 옵션 설정
+        if model.startswith('gpt-5'):
+            # GPT-5 계열: Responses API
+            gen_options = GenOptions(
+                model=model,
+                reasoning_effort=reasoning_effort,
+                max_output_tokens=1024
+            )
+        else:
+            # GPT-4o 계열: Chat Completions API
+            gen_options = GenOptions(
+                model=model,
+                temperature=0.8,
+                max_tokens=1000
+            )
+        
+        # QuoteGenerator를 사용하여 글귀 생성 (원시 텍스트 반환)
+        raw_result = await asyncio.to_thread(
+            quote_generator.generate_quotes,
+            style=quote_request.style,
+            author_style=quote_request.author_style,
+            keywords=quote_request.keywords,
+            length=quote_request.length,
+            opt=gen_options
+        )
+        
+        # 응답 파싱하여 구조화된 결과 생성
+        parsed_result = quote_generator.parse_response(
+            raw_result,
+            quote_request.style,
+            quote_request.author_style,
+            quote_request.keywords,
+            quote_request.length
+        )
+        
+        # 파싱 결과 확인 - 실패한 경우 크레딧 차감하지 않고 에러 응답
+        if not parsed_result.get("success", False):
+            end_time = datetime.now()
+            generation_time = (end_time - start_time).total_seconds()
+            
+            # 부적절한 응답이나 파싱 실패 시 422 상태코드로 응답
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": parsed_result.get("error", "글귀 생성에 실패했습니다"),
+                    "error_code": parsed_result.get("error_code", "GENERATION_FAILED"),
+                    "generation_time": generation_time,
+                    "retry_recommended": True
+                }
+            )
+        
+        # 글귀 생성 성공 후 크레딧 차감
+        remaining_credits = deduct_user_credit(quote_request.user_id)
+        
+        end_time = datetime.now()
+        generation_time = (end_time - start_time).total_seconds()
+        
+        # 생성 시간과 남은 크레딧, AI 모델 정보 추가
+        parsed_result["generation_time"] = generation_time
+        parsed_result["remaining_credits"] = remaining_credits
+        parsed_result["ai_model_used"] = model
+        
+        return QuoteResponse(**parsed_result)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"글귀 생성 중 오류가 발생했습니다: {str(e)}"
         )
