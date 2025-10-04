@@ -7,6 +7,7 @@ import 'screens/login_screen.dart';
 import 'config/api_config.dart';
 import 'services/remote_config_service.dart';
 import 'providers/font_size_provider.dart';
+import 'providers/theme_color_provider.dart';
 
 // Supabase 설정
 const supabaseUrl = 'https://tnihnfuwhhtvbkmhwiut.supabase.co';
@@ -122,6 +123,7 @@ class _PoetryWriterAppState extends ConsumerState<PoetryWriterApp> {
   @override
   Widget build(BuildContext context) {
     final fontSizeOption = ref.watch(fontSizeProvider);
+    final themeColorOption = ref.watch(themeColorProvider);
 
     if (_isLoading) {
       return const MaterialApp(
@@ -147,7 +149,7 @@ class _PoetryWriterAppState extends ConsumerState<PoetryWriterApp> {
       },
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
+          seedColor: themeColorOption.color,
           brightness: Brightness.light,
         ),
         useMaterial3: true,

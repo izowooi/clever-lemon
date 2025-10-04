@@ -6,6 +6,7 @@ import '../main.dart';
 import '../services/interfaces/auth_api_service.dart';
 import '../services/implementations/http_auth_api_service.dart';
 import '../providers/font_size_provider.dart';
+import '../providers/theme_color_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -399,13 +400,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 폰트 크기 설정
+            // 화면 설정 카드
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // 글자 크기 설정
                     Row(
                       children: [
                         const Icon(Icons.text_fields, color: Colors.blue),
@@ -432,6 +434,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           onSelected: (selected) {
                             if (selected) {
                               ref.read(fontSizeProvider.notifier).setFontSize(option);
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 24),
+                    const Divider(),
+                    const SizedBox(height: 24),
+
+                    // 테마 색상 설정
+                    Row(
+                      children: [
+                        const Icon(Icons.palette, color: Colors.blue),
+                        const SizedBox(width: 16),
+                        const Text(
+                          '테마 색상',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: ThemeColorOption.values.map((option) {
+                        final currentOption = ref.watch(themeColorProvider);
+                        final isSelected = currentOption == option;
+                        return ChoiceChip(
+                          label: Text(option.label),
+                          selected: isSelected,
+                          avatar: Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: option.color,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          onSelected: (selected) {
+                            if (selected) {
+                              ref.read(themeColorProvider.notifier).setThemeColor(option);
                             }
                           },
                         );
