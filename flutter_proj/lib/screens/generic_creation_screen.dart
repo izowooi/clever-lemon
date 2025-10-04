@@ -168,15 +168,20 @@ class GenericCreationScreen extends ConsumerWidget {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: state.generatedTemplates.length + 1, // 결과물들 + 축하 카드 1개
+            itemCount: state.generatedTemplates.length + 2, // 축하 카드(처음) + 결과물들 + 축하 카드(끝)
             itemBuilder: (context, index) {
+              // 첫 번째 인덱스는 축하 카드
+              if (index == 0) {
+                return _buildCongratulationsCard(context, state, notifier, uiTexts);
+              }
+
               // 마지막 인덱스는 축하 카드
-              if (index == state.generatedTemplates.length) {
+              if (index == state.generatedTemplates.length + 1) {
                 return _buildCongratulationsCard(context, state, notifier, uiTexts);
               }
 
               // 결과물 템플릿 카드들
-              final template = state.generatedTemplates[index];
+              final template = state.generatedTemplates[index - 1];
               return PoetryTemplateCard(
                 template: template,
               );
