@@ -97,6 +97,8 @@ class GenericCreationScreen extends ConsumerWidget {
       title = uiTexts.selectWord3;
     }
 
+    final isGeneratingResult = state.selectedWords.length == 3 && state.isLoading;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -105,8 +107,8 @@ class GenericCreationScreen extends ConsumerWidget {
           _buildProgressIndicator(context, state, uiTexts),
           const SizedBox(height: 16),
 
-          // 뒤로가기 버튼
-          if (notifier.canGoBack())
+          // 뒤로가기 버튼 (마지막 단어 생성 중이 아닐 때만 표시)
+          if (notifier.canGoBack() && !isGeneratingResult)
             _buildBackButton(context, notifier, uiTexts),
 
           // 에러 메시지 표시
@@ -123,7 +125,7 @@ class GenericCreationScreen extends ConsumerWidget {
               isLoading: state.isLoading,
               title: title,
               onRefresh: state.currentWords.isEmpty ? null : notifier.loadRandomWords,
-              isGenerating: state.selectedWords.length == 3 && state.isLoading,
+              isGenerating: isGeneratingResult,
               generatingText: uiTexts.aiGenerating,
               loadingText: uiTexts.loading,
             ),
@@ -163,13 +165,6 @@ class GenericCreationScreen extends ConsumerWidget {
   Widget _buildCompletedView(BuildContext context, GenericCreationState state, GenericCreationNotifier notifier, GenericUITexts uiTexts) {
     return Column(
       children: [
-        // 뒤로가기 버튼
-        if (notifier.canGoBack())
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: _buildBackButton(context, notifier, uiTexts),
-          ),
-
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -273,10 +268,6 @@ class GenericCreationScreen extends ConsumerWidget {
               children: [
                 _buildProgressIndicatorForSettings(context, 1, 6, state, uiTexts),
                 const SizedBox(height: 16),
-
-                // 뒤로가기 버튼
-                if (notifier.canGoBack())
-                  _buildBackButton(context, notifier, uiTexts),
 
                 Expanded(
                   child: SelectionCard<String>(
